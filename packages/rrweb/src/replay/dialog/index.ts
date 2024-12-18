@@ -1,5 +1,5 @@
-import type { attributeMutation } from '@rrweb/types';
-import { RRNode } from 'rrdom';
+import type { attributeMutation } from '@supademo/rrweb-types';
+import { RRNode } from '@supademo/rrdom';
 
 /**
  * Checks if the dialog is a top level dialog and applies the dialog to the top level

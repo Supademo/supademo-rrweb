@@ -1,4 +1,4 @@
-# @rrweb/replay
+# @supademo/rrweb-replay
 
 This package contains all the necessary code to replay recorded events.
 See the [guide](../../guide.md) for more info on rrweb.
@@ -6,13 +6,13 @@ See the [guide](../../guide.md) for more info on rrweb.
 ## Installation
 
 ```bash
-npm install @rrweb/replay
+npm install @supademo/rrweb-replay
 ```
 
 ## Usage
 
 ```js
-import { Replayer } from '@rrweb/replay';
+import { Replayer } from '@supademo/rrweb-replay';
 
 const replayer = new Replayer(events, {
   // options

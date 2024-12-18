@@ -1,4 +1,4 @@
-export * from 'rrweb';
-export * from '@rrweb/packer';
-// export * from '@rrweb/rrweb-plugin-console-record';
-// export * from '@rrweb/rrweb-plugin-console-replay';
+export * from '@supademo/rrweb';
+export * from '@supademo/rrweb-packer';
+// export * from '@supademo/rrweb-plugin-console-record';
+// export * from '@supademo/rrweb-plugin-console-replay';

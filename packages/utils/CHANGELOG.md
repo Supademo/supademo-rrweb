@@ -1,4 +1,4 @@
-# @rrweb/utils
+# @supademo/rrweb-utils
 
 ## 2.0.0-alpha.18
 

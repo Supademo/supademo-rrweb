@@ -1,5 +1,5 @@
-import { EventType, IncrementalSource } from '@rrweb/types';
-import type { eventWithTime } from '@rrweb/types';
+import { EventType, IncrementalSource } from '@supademo/rrweb-types';
+import type { eventWithTime } from '@supademo/rrweb-types';
 
 /**
  * https://github.com/rrweb-io/rrweb/pull/1417

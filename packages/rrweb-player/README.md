@@ -29,7 +29,7 @@ npm install --save rrweb-player
 ```
 
 ```js
-import rrwebPlayer from 'rrweb-player';
+import rrwebPlayer from '@supademo/rrweb-player';
 import 'rrweb-player/dist/style.css';
 ```
 

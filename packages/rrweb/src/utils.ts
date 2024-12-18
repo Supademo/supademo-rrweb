@@ -9,11 +9,11 @@ import type {
   DeprecatedMirror,
   textMutation,
   IMirror,
-} from '@rrweb/types';
-import type { Mirror, SlimDOMOptions } from 'rrweb-snapshot';
-import { isShadowRoot, IGNORED_NODE, classMatchesRegex } from 'rrweb-snapshot';
-import { RRNode, RRIFrameElement, BaseRRNode } from 'rrdom';
-import dom from '@rrweb/utils';
+} from '@supademo/rrweb-types';
+import type { Mirror, SlimDOMOptions } from '@supademo/rrweb-snapshot';
+import { isShadowRoot, IGNORED_NODE, classMatchesRegex } from '@supademo/rrweb-snapshot';
+import { RRNode, RRIFrameElement, BaseRRNode } from '@supademo/rrdom';
+import dom from '@supademo/rrweb-utils';
 
 export function on(
   type: string,

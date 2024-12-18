@@ -1,9 +1,9 @@
-import type { Emitter } from '@rrweb/types';
-import { MediaInteractions, ReplayerEvents } from '@rrweb/types';
-import type { RRMediaElement } from 'rrdom';
+import type { Emitter } from '@supademo/rrweb-types';
+import { MediaInteractions, ReplayerEvents } from '@supademo/rrweb-types';
+import type { RRMediaElement } from '@supademo/rrdom';
 import type { createPlayerService, createSpeedService } from '../machine';
-import type { Mirror } from 'rrweb-snapshot';
-import type { mediaInteractionData, mediaAttributes } from '@rrweb/types';
+import type { Mirror } from '@supademo/rrweb-snapshot';
+import type { mediaInteractionData, mediaAttributes } from '@supademo/rrweb-types';
 
 type MediaState = {
   isPlaying: boolean;

@@ -1,19 +1,19 @@
-# @rrweb/rrweb-plugin-sequential-id-replay
+# @supademo/rrweb-plugin-sequential-id-replay
 
-Use this plugin in combination with the [@rrweb/rrweb-plugin-sequential-id-record](../rrweb-plugin-sequential-id-record) plugin to record and replay events with a sequential id.
+Use this plugin in combination with the [@supademo/rrweb-plugin-sequential-id-record](../rrweb-plugin-sequential-id-record) plugin to record and replay events with a sequential id.
 See the [guide](../../../guide.md) for more info on rrweb.
 
 ## Installation
 
 ```bash
-npm install @rrweb/rrweb-plugin-sequential-id-replay
+npm install @supademo/rrweb-plugin-sequential-id-replay
 ```
 
 ## Usage
 
 ```js
-import rrweb from 'rrweb';
-import { getReplaySequentialIdPlugin } from '@rrweb/rrweb-plugin-sequential-id-replay';
+import rrweb from '@supademo/rrweb';
+import { getReplaySequentialIdPlugin } from '@supademo/rrweb-plugin-sequential-id-replay';
 
 const replayer = new rrweb.Replayer(events, {
   plugins: [

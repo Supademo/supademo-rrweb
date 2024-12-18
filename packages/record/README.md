@@ -1,4 +1,4 @@
-# @rrweb/record
+# @supademo/rrweb-record
 
 This package contains all the record related code in rrweb.
 See the [guide](../../guide.md) for more info on rrweb.
@@ -6,13 +6,13 @@ See the [guide](../../guide.md) for more info on rrweb.
 ## Installation
 
 ```bash
-npm install @rrweb/record
+npm install @supademo/rrweb-record
 ```
 
 ## Usage
 
 ```js
-import { record } from '@rrweb/record';
+import { record } from '@supademo/rrweb-record';
 
 record({
   emit(event) {

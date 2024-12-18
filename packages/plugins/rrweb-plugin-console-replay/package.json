@@ -1,6 +1,6 @@
 {
-  "name": "@rrweb/rrweb-plugin-console-replay",
-  "version": "2.0.0-alpha.18",
+  "name": "@supademo/rrweb-plugin-console-replay",
+  "version": "3.0.0",
   "description": "",
   "type": "module",
   "main": "./dist/rrweb-plugin-console-replay.umd.cjs",
@@ -25,7 +25,7 @@
   ],
   "scripts": {
     "dev": "vite build --watch",
-    "build": "yarn turbo run prepublish",
+    "build": "pnpm turbo run prepublish",
     "check-types": "tsc -noEmit",
     "prepublish": "tsc -noEmit && vite build"
   },
@@ -43,13 +43,16 @@
   },
   "homepage": "https://github.com/rrweb-io/rrweb#readme",
   "devDependencies": {
-    "@rrweb/rrweb-plugin-console-record": "^2.0.0-alpha.18",
-    "rrweb": "^2.0.0-alpha.18",
+    "@supademo/rrweb": "workspace:^",
+    "@supademo/rrweb-plugin-console-record": "workspace:^",
     "typescript": "^5.4.5",
     "vite": "^5.3.1",
     "vite-plugin-dts": "^3.9.1"
   },
   "peerDependencies": {
-    "rrweb": "^2.0.0-alpha.18"
+    "@supademo/rrweb": "workspace:^"
+  },
+  "dependencies": {
+    "@supademo/rrweb-types": "workspace:^"
   }
 }

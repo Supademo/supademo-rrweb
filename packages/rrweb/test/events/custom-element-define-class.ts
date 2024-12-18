@@ -1,5 +1,5 @@
-import { EventType } from '@rrweb/types';
-import type { eventWithTime } from '@rrweb/types';
+import { EventType } from '@supademo/rrweb-types';
+import type { eventWithTime } from '@supademo/rrweb-types';
 
 const now = Date.now();
 const events: eventWithTime[] = [

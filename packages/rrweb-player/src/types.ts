@@ -1,6 +1,6 @@
-import type { eventWithTime } from '@rrweb/types';
-import type { Replayer, playerConfig } from '@rrweb/replay';
-import type { Mirror } from 'rrweb-snapshot';
+import type { eventWithTime } from '@supademo/rrweb-types';
+import type { Replayer, playerConfig } from '@supademo/rrweb-replay';
+import type { Mirror } from '@supademo/rrweb-snapshot';
 
 export type RRwebPlayerOptions = {
   target: HTMLElement;

@@ -5,7 +5,7 @@ import {
   type canvasMutationWithType,
   type IWindow,
   type listenerHandler,
-} from '@rrweb/types';
+} from '@supademo/rrweb-types';
 import { hookSetter, isBlocked, patch } from '../../../utils';
 import { saveWebGLVar, serializeArgs } from './serialize-args';
 

@@ -14,7 +14,7 @@
 使用 rrweb-player 时，可以隐藏其控制器 UI：
 
 ```js
-import rrwebPlayer from 'rrweb-player';
+import rrwebPlayer from '@supademo/rrweb-player';
 
 new rrwebPlayer({
   target: document.body,

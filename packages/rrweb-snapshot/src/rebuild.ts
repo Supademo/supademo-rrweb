@@ -5,7 +5,7 @@ import {
   NodeType,
   type elementNode,
   type legacyAttributes,
-} from '@rrweb/types';
+} from '@supademo/rrweb-types';
 import { type tagMap, type BuildCache } from './types';
 import { isElement, Mirror, isNodeMetaEqual } from './utils';
 import postcss from 'postcss';

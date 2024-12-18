@@ -1,24 +1,24 @@
-# @rrweb/all
+# @supademo/rrweb-all
 
 Convenience package that includes a bundle of rrweb packages.
 
 Includes the following packages:
 
 - [rrweb](../rrweb)
-- [@rrweb/record](../record)
-- [@rrweb/replay](../replay)
-- [@rrweb/packer](../packer)
+- [@supademo/rrweb-record](../record)
+- [@supademo/rrweb-replay](../replay)
+- [@supademo/rrweb-packer](../packer)
 
 ## Installation
 
 ```bash
-npm install @rrweb/all
+npm install @supademo/rrweb-all
 ```
 
 ## Usage
 
 ```js
-import { record, replay, pack, unpack } from '@rrweb/all';
+import { record, replay, pack, unpack } from '@supademo/rrweb-all';
 
 // use record, replay, pack, unpack as you would with the individual packages.
 ```

@@ -11,7 +11,7 @@ import {
   IncrementalSource,
   styleSheetRuleData,
   selectionData,
-} from '@rrweb/types';
+} from '@supademo/rrweb-types';
 import {
   assertSnapshot,
   getServerURL,

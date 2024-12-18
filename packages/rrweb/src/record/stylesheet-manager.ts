@@ -1,4 +1,4 @@
-import { stringifyRule } from 'rrweb-snapshot';
+import { stringifyRule } from '@supademo/rrweb-snapshot';
 import type {
   elementNode,
   serializedNodeWithId,
@@ -6,7 +6,7 @@ import type {
   adoptedStyleSheetParam,
   attributeMutation,
   mutationCallBack,
-} from '@rrweb/types';
+} from '@supademo/rrweb-types';
 import { StyleSheetMirror } from '../utils';
 
 export class StylesheetManager {
