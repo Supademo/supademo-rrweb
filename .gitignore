@@ -13,10 +13,6 @@ temp
 
 .DS_Store
 
-# output of `yarn build`
-build
-dist
-
 # turbo cache
 .turbo
 
