@@ -10,7 +10,7 @@
     "dist",
     "package.json"
   ],
-  "types": "build/index.d.ts",
+  "types": "dist/index.d.ts",
   "scripts": {
     "install": "playwright install",
     "build": "tsc",
