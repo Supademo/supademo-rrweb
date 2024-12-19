@@ -377,19 +377,17 @@ function buildNode(
          * we can remove it.
          */
         if (!node.shadowRoot) {
-          node.attachShadow({ mode: 'open' });
-          const hostWindow = node.ownerDocument?.defaultView;
-          if (hostWindow) {
-            if (n?.adoptedStyleSheets) {
-              n.adoptedStyleSheets.forEach(
-                (adoptedStyleSheet) => {
-                  const styleSheet = new hostWindow.CSSStyleSheet();
-                  styleSheet.replaceSync(adoptedStyleSheet);
-                  node.shadowRoot?.adoptedStyleSheets.push(styleSheet);
-                },
-              );
-            }
-          }
+          const shadow = node.attachShadow({ mode: "open" });
+          const targetHost = node.ownerDocument?.defaultView;
+          n.adoptedStyleSheets?.forEach(
+            (adoptedStyleSheets) => {
+              if (!targetHost) return;
+              const styleSheet = new targetHost.CSSStyleSheet();
+              styleSheet.replaceSync(adoptedStyleSheets);
+              if (node.shadowRoot)
+                shadow.adoptedStyleSheets = [styleSheet];
+            },
+          );
         } else {
           while (node.shadowRoot.firstChild) {
             node.shadowRoot.removeChild(node.shadowRoot.firstChild);
