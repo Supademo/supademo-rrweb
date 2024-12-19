@@ -5,6 +5,7 @@
     "type": "git",
     "url": "git+ssh://git@github.com/rrweb-io/rrweb.git"
   },
+  "version": "3.0.0",
   "keywords": [
     "rrweb"
   ],
