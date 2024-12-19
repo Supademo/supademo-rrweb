@@ -4,8 +4,6 @@ node_modules
 package-lock.json
 # yarn.lock
 tsconfig.tsbuildinfo
-build
-dist
 es
 lib
 typings
