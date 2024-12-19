@@ -810,6 +810,7 @@ export type serializedNode = (
   rootId?: number;
   isShadowHost?: boolean;
   isShadow?: boolean;
+  adoptedStyleSheets?: string[];
 };
 
 export type serializedNodeWithId = serializedNode & { id: number };
