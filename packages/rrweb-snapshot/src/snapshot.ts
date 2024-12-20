@@ -32,8 +32,6 @@ import {
   markCssSplits,
 } from './utils';
 import dom from '@supademo/rrweb-utils';
-import postcss from 'postcss';
-import { mediaSelectorPlugin, pseudoClassPlugin } from './css';
 
 let _id = 1;
 const tagNameRegex = new RegExp('[^a-z0-9-_:]');
@@ -541,15 +539,6 @@ function serializeTextNode(
   };
 }
 
-function extractHoverPseudoClass(cssText: string): string {
-  const ast: { css: string } = postcss([
-    mediaSelectorPlugin,
-    pseudoClassPlugin,
-  ]).process(cssText);
-  const result = ast.css;
-  return result;
-}
-
 function serializeElementNode(
   n: HTMLElement,
   options: {
@@ -623,7 +612,6 @@ function serializeElementNode(
       if (n.childNodes.length > 1) {
         cssText = markCssSplits(cssText, n as HTMLStyleElement);
       }
-      cssText = extractHoverPseudoClass(cssText);
       attributes._cssText = cssText;
     }
   }

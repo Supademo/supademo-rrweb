@@ -218,6 +218,22 @@ class Mirror {
 function createMirror$2() {
   return new Mirror();
 }
+const IGNORED_NODE = -2;
+function classMatchesRegex(node2, regex, checkAncestors) {
+  if (!node2) return false;
+  if (node2.nodeType !== node2.ELEMENT_NODE) {
+    if (!checkAncestors) return false;
+    return classMatchesRegex(index$1.parentNode(node2), regex, checkAncestors);
+  }
+  for (let eIndex = node2.classList.length; eIndex--; ) {
+    const className = node2.classList[eIndex];
+    if (regex.test(className)) {
+      return true;
+    }
+  }
+  if (!checkAncestors) return false;
+  return classMatchesRegex(index$1.parentNode(node2), regex, checkAncestors);
+}
 function getDefaultExportFromCjs$1(x2) {
   return x2 && x2.__esModule && Object.prototype.hasOwnProperty.call(x2, "default") ? x2["default"] : x2;
 }
@@ -3819,22 +3835,6 @@ postcss$1$1.Input;
 postcss$1$1.Rule;
 postcss$1$1.Root;
 postcss$1$1.Node;
-const IGNORED_NODE = -2;
-function classMatchesRegex(node2, regex, checkAncestors) {
-  if (!node2) return false;
-  if (node2.nodeType !== node2.ELEMENT_NODE) {
-    if (!checkAncestors) return false;
-    return classMatchesRegex(index$1.parentNode(node2), regex, checkAncestors);
-  }
-  for (let eIndex = node2.classList.length; eIndex--; ) {
-    const className = node2.classList[eIndex];
-    if (regex.test(className)) {
-      return true;
-    }
-  }
-  if (!checkAncestors) return false;
-  return classMatchesRegex(index$1.parentNode(node2), regex, checkAncestors);
-}
 var __defProp22 = Object.defineProperty;
 var __defNormalProp22 = (obj, key, value) => key in obj ? __defProp22(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
 var __publicField22 = (obj, key, value) => __defNormalProp22(obj, typeof key !== "symbol" ? key + "" : key, value);
