@@ -92,40 +92,6 @@ function isNodeMetaEqual(a2, b) {
     return a2.tagName === b.tagName && JSON.stringify(a2.attributes) === JSON.stringify(b.attributes) && a2.isSVG === b.isSVG && a2.needBlock === b.needBlock;
   return false;
 }
-const MEDIA_SELECTOR = /(max|min)-device-(width|height)/;
-const MEDIA_SELECTOR_GLOBAL = new RegExp(MEDIA_SELECTOR.source, "g");
-const mediaSelectorPlugin = {
-  postcssPlugin: "postcss-custom-selectors",
-  prepare() {
-    return {
-      postcssPlugin: "postcss-custom-selectors",
-      AtRule: function(atrule) {
-        if (atrule.params.match(MEDIA_SELECTOR_GLOBAL)) {
-          atrule.params = atrule.params.replace(MEDIA_SELECTOR_GLOBAL, "$1-$2");
-        }
-      }
-    };
-  }
-};
-const pseudoClassPlugin = {
-  postcssPlugin: "postcss-hover-classes",
-  prepare: function() {
-    const fixed = [];
-    return {
-      Rule: function(rule2) {
-        if (fixed.indexOf(rule2) !== -1) {
-          return;
-        }
-        fixed.push(rule2);
-        rule2.selectors.forEach(function(selector) {
-          if (selector.includes(":hover")) {
-            rule2.selector += ",\n" + selector.replace(/:hover/g, ".\\:hover");
-          }
-        });
-      }
-    };
-  }
-};
 function getDefaultExportFromCjs$1(x2) {
   return x2 && x2.__esModule && Object.prototype.hasOwnProperty.call(x2, "default") ? x2["default"] : x2;
 }
@@ -3727,6 +3693,40 @@ postcss$1$1.Input;
 postcss$1$1.Rule;
 postcss$1$1.Root;
 postcss$1$1.Node;
+const MEDIA_SELECTOR = /(max|min)-device-(width|height)/;
+const MEDIA_SELECTOR_GLOBAL = new RegExp(MEDIA_SELECTOR.source, "g");
+const mediaSelectorPlugin = {
+  postcssPlugin: "postcss-custom-selectors",
+  prepare() {
+    return {
+      postcssPlugin: "postcss-custom-selectors",
+      AtRule: function(atrule) {
+        if (atrule.params.match(MEDIA_SELECTOR_GLOBAL)) {
+          atrule.params = atrule.params.replace(MEDIA_SELECTOR_GLOBAL, "$1-$2");
+        }
+      }
+    };
+  }
+};
+const pseudoClassPlugin = {
+  postcssPlugin: "postcss-hover-classes",
+  prepare: function() {
+    const fixed = [];
+    return {
+      Rule: function(rule2) {
+        if (fixed.indexOf(rule2) !== -1) {
+          return;
+        }
+        fixed.push(rule2);
+        rule2.selectors.forEach(function(selector) {
+          if (selector.includes(":hover")) {
+            rule2.selector += ",\n" + selector.replace(/:hover/g, ".\\:hover");
+          }
+        });
+      }
+    };
+  }
+};
 const tagMap = {
   script: "noscript",
   // camel case svg element tag names
