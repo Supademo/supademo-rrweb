@@ -500,950 +500,6 @@ function splitCssText(cssText, style) {
 function markCssSplits(cssText, style) {
   return splitCssText(cssText, style).join("/* rr_split */");
 }
-let _id = 1;
-const tagNameRegex = new RegExp("[^a-z0-9-_:]");
-const IGNORED_NODE = -2;
-function genId() {
-  return _id++;
-}
-function getValidTagName(element) {
-  if (element instanceof HTMLFormElement) {
-    return "form";
-  }
-  const processedTagName = toLowerCase(element.tagName);
-  if (tagNameRegex.test(processedTagName)) {
-    return "div";
-  }
-  return processedTagName;
-}
-let canvasService;
-let canvasCtx;
-const SRCSET_NOT_SPACES = /^[^ \t\n\r\u000c]+/;
-const SRCSET_COMMAS_OR_SPACES = /^[, \t\n\r\u000c]+/;
-function getAbsoluteSrcsetString(doc, attributeValue) {
-  if (attributeValue.trim() === "") {
-    return attributeValue;
-  }
-  let pos = 0;
-  function collectCharacters(regEx) {
-    let chars;
-    const match = regEx.exec(attributeValue.substring(pos));
-    if (match) {
-      chars = match[0];
-      pos += chars.length;
-      return chars;
-    }
-    return "";
-  }
-  const output = [];
-  while (true) {
-    collectCharacters(SRCSET_COMMAS_OR_SPACES);
-    if (pos >= attributeValue.length) {
-      break;
-    }
-    let url = collectCharacters(SRCSET_NOT_SPACES);
-    if (url.slice(-1) === ",") {
-      url = absoluteToDoc(doc, url.substring(0, url.length - 1));
-      output.push(url);
-    } else {
-      let descriptorsStr = "";
-      url = absoluteToDoc(doc, url);
-      let inParens = false;
-      while (true) {
-        const c = attributeValue.charAt(pos);
-        if (c === "") {
-          output.push((url + descriptorsStr).trim());
-          break;
-        } else if (!inParens) {
-          if (c === ",") {
-            pos += 1;
-            output.push((url + descriptorsStr).trim());
-            break;
-          } else if (c === "(") {
-            inParens = true;
-          }
-        } else {
-          if (c === ")") {
-            inParens = false;
-          }
-        }
-        descriptorsStr += c;
-        pos += 1;
-      }
-    }
-  }
-  return output.join(", ");
-}
-const cachedDocument = /* @__PURE__ */ new WeakMap();
-function absoluteToDoc(doc, attributeValue) {
-  if (!attributeValue || attributeValue.trim() === "") {
-    return attributeValue;
-  }
-  return getHref(doc, attributeValue);
-}
-function isSVGElement(el) {
-  return Boolean(el.tagName === "svg" || el.ownerSVGElement);
-}
-function getHref(doc, customHref) {
-  let a = cachedDocument.get(doc);
-  if (!a) {
-    a = doc.createElement("a");
-    cachedDocument.set(doc, a);
-  }
-  if (!customHref) {
-    customHref = "";
-  } else if (customHref.startsWith("blob:") || customHref.startsWith("data:")) {
-    return customHref;
-  }
-  a.setAttribute("href", customHref);
-  return a.href;
-}
-function transformAttribute(doc, tagName, name, value) {
-  if (!value) {
-    return value;
-  }
-  if (name === "src" || name === "href" && !(tagName === "use" && value[0] === "#")) {
-    return absoluteToDoc(doc, value);
-  } else if (name === "xlink:href" && value[0] !== "#") {
-    return absoluteToDoc(doc, value);
-  } else if (name === "background" && (tagName === "table" || tagName === "td" || tagName === "th")) {
-    return absoluteToDoc(doc, value);
-  } else if (name === "srcset") {
-    return getAbsoluteSrcsetString(doc, value);
-  } else if (name === "style") {
-    return absolutifyURLs(value, getHref(doc));
-  } else if (tagName === "object" && name === "data") {
-    return absoluteToDoc(doc, value);
-  }
-  return value;
-}
-function ignoreAttribute(tagName, name, _value) {
-  return (tagName === "video" || tagName === "audio") && name === "autoplay";
-}
-function _isBlockedElement(element, blockClass, blockSelector) {
-  try {
-    if (typeof blockClass === "string") {
-      if (element.classList.contains(blockClass)) {
-        return true;
-      }
-    } else {
-      for (let eIndex = element.classList.length; eIndex--; ) {
-        const className = element.classList[eIndex];
-        if (blockClass.test(className)) {
-          return true;
-        }
-      }
-    }
-    if (blockSelector) {
-      return element.matches(blockSelector);
-    }
-  } catch (e) {
-  }
-  return false;
-}
-function classMatchesRegex(node2, regex, checkAncestors) {
-  if (!node2) return false;
-  if (node2.nodeType !== node2.ELEMENT_NODE) {
-    if (!checkAncestors) return false;
-    return classMatchesRegex(index.parentNode(node2), regex, checkAncestors);
-  }
-  for (let eIndex = node2.classList.length; eIndex--; ) {
-    const className = node2.classList[eIndex];
-    if (regex.test(className)) {
-      return true;
-    }
-  }
-  if (!checkAncestors) return false;
-  return classMatchesRegex(index.parentNode(node2), regex, checkAncestors);
-}
-function needMaskingText(node2, maskTextClass, maskTextSelector, checkAncestors) {
-  let el;
-  if (isElement(node2)) {
-    el = node2;
-    if (!index.childNodes(el).length) {
-      return false;
-    }
-  } else if (index.parentElement(node2) === null) {
-    return false;
-  } else {
-    el = index.parentElement(node2);
-  }
-  try {
-    if (typeof maskTextClass === "string") {
-      if (checkAncestors) {
-        if (el.closest(`.${maskTextClass}`)) return true;
-      } else {
-        if (el.classList.contains(maskTextClass)) return true;
-      }
-    } else {
-      if (classMatchesRegex(el, maskTextClass, checkAncestors)) return true;
-    }
-    if (maskTextSelector) {
-      if (checkAncestors) {
-        if (el.closest(maskTextSelector)) return true;
-      } else {
-        if (el.matches(maskTextSelector)) return true;
-      }
-    }
-  } catch (e) {
-  }
-  return false;
-}
-function onceIframeLoaded(iframeEl, listener, iframeLoadTimeout) {
-  const win = iframeEl.contentWindow;
-  if (!win) {
-    return;
-  }
-  let fired = false;
-  let readyState;
-  try {
-    readyState = win.document.readyState;
-  } catch (error) {
-    return;
-  }
-  if (readyState !== "complete") {
-    const timer = setTimeout(() => {
-      if (!fired) {
-        listener();
-        fired = true;
-      }
-    }, iframeLoadTimeout);
-    iframeEl.addEventListener("load", () => {
-      clearTimeout(timer);
-      fired = true;
-      listener();
-    });
-    return;
-  }
-  const blankUrl = "about:blank";
-  if (win.location.href !== blankUrl || iframeEl.src === blankUrl || iframeEl.src === "") {
-    setTimeout(listener, 0);
-    return iframeEl.addEventListener("load", listener);
-  }
-  iframeEl.addEventListener("load", listener);
-}
-function onceStylesheetLoaded(link, listener, styleSheetLoadTimeout) {
-  let fired = false;
-  let styleSheetLoaded;
-  try {
-    styleSheetLoaded = link.sheet;
-  } catch (error) {
-    return;
-  }
-  if (styleSheetLoaded) return;
-  const timer = setTimeout(() => {
-    if (!fired) {
-      listener();
-      fired = true;
-    }
-  }, styleSheetLoadTimeout);
-  link.addEventListener("load", () => {
-    clearTimeout(timer);
-    fired = true;
-    listener();
-  });
-}
-function serializeNode(n, options) {
-  const {
-    doc,
-    mirror,
-    blockClass,
-    blockSelector,
-    needsMask,
-    inlineStylesheet,
-    maskInputOptions = {},
-    maskTextFn,
-    maskInputFn,
-    dataURLOptions = {},
-    inlineImages,
-    recordCanvas,
-    keepIframeSrcFn,
-    newlyAddedElement = false,
-    cssCaptured = false
-  } = options;
-  const rootId = getRootId(doc, mirror);
-  switch (n.nodeType) {
-    case n.DOCUMENT_NODE:
-      if (n.compatMode !== "CSS1Compat") {
-        return {
-          type: NodeType.Document,
-          childNodes: [],
-          compatMode: n.compatMode
-          // probably "BackCompat"
-        };
-      } else {
-        return {
-          type: NodeType.Document,
-          childNodes: []
-        };
-      }
-    case n.DOCUMENT_TYPE_NODE:
-      return {
-        type: NodeType.DocumentType,
-        name: n.name,
-        publicId: n.publicId,
-        systemId: n.systemId,
-        rootId
-      };
-    case n.ELEMENT_NODE:
-      return serializeElementNode(n, {
-        doc,
-        blockClass,
-        blockSelector,
-        inlineStylesheet,
-        maskInputOptions,
-        maskInputFn,
-        dataURLOptions,
-        inlineImages,
-        recordCanvas,
-        keepIframeSrcFn,
-        newlyAddedElement,
-        rootId
-      });
-    case n.TEXT_NODE:
-      return serializeTextNode(n, {
-        doc,
-        needsMask,
-        maskTextFn,
-        rootId,
-        cssCaptured
-      });
-    case n.CDATA_SECTION_NODE:
-      return {
-        type: NodeType.CDATA,
-        textContent: "",
-        rootId
-      };
-    case n.COMMENT_NODE:
-      return {
-        type: NodeType.Comment,
-        textContent: index.textContent(n) || "",
-        rootId
-      };
-    default:
-      return false;
-  }
-}
-function getRootId(doc, mirror) {
-  if (!mirror.hasNode(doc)) return void 0;
-  const docId = mirror.getId(doc);
-  return docId === 1 ? void 0 : docId;
-}
-function serializeTextNode(n, options) {
-  const { needsMask, maskTextFn, rootId, cssCaptured } = options;
-  const parent = index.parentNode(n);
-  const parentTagName = parent && parent.tagName;
-  let textContent2 = "";
-  const isStyle = parentTagName === "STYLE" ? true : void 0;
-  const isScript = parentTagName === "SCRIPT" ? true : void 0;
-  if (isScript) {
-    textContent2 = "SCRIPT_PLACEHOLDER";
-  } else if (!cssCaptured) {
-    textContent2 = index.textContent(n);
-    if (isStyle && textContent2) {
-      textContent2 = absolutifyURLs(textContent2, getHref(options.doc));
-    }
-  }
-  if (!isStyle && !isScript && textContent2 && needsMask) {
-    textContent2 = maskTextFn ? maskTextFn(textContent2, index.parentElement(n)) : textContent2.replace(/[\S]/g, "*");
-  }
-  return {
-    type: NodeType.Text,
-    textContent: textContent2 || "",
-    rootId
-  };
-}
-function serializeElementNode(n, options) {
-  const {
-    doc,
-    blockClass,
-    blockSelector,
-    inlineStylesheet,
-    maskInputOptions = {},
-    maskInputFn,
-    dataURLOptions = {},
-    inlineImages,
-    recordCanvas,
-    keepIframeSrcFn,
-    newlyAddedElement = false,
-    rootId
-  } = options;
-  const needBlock = _isBlockedElement(n, blockClass, blockSelector);
-  const tagName = getValidTagName(n);
-  let attributes = {};
-  const len = n.attributes.length;
-  for (let i = 0; i < len; i++) {
-    const attr = n.attributes[i];
-    if (!ignoreAttribute(tagName, attr.name, attr.value)) {
-      attributes[attr.name] = transformAttribute(
-        doc,
-        tagName,
-        toLowerCase(attr.name),
-        attr.value
-      );
-    }
-  }
-  if (tagName === "link" && inlineStylesheet) {
-    const stylesheet = Array.from(doc.styleSheets).find((s) => {
-      return s.href === n.href;
-    });
-    let cssText = null;
-    if (stylesheet) {
-      cssText = stringifyStylesheet(stylesheet);
-    }
-    if (cssText) {
-      delete attributes.rel;
-      delete attributes.href;
-      attributes._cssText = cssText;
-    }
-  }
-  if (tagName === "style" && n.sheet) {
-    let cssText = stringifyStylesheet(
-      n.sheet
-    );
-    if (cssText) {
-      if (n.childNodes.length > 1) {
-        cssText = markCssSplits(cssText, n);
-      }
-      attributes._cssText = cssText;
-    }
-  }
-  if (tagName === "input" || tagName === "textarea" || tagName === "select") {
-    const value = n.value;
-    const checked = n.checked;
-    if (attributes.type !== "radio" && attributes.type !== "checkbox" && attributes.type !== "submit" && attributes.type !== "button" && value) {
-      attributes.value = maskInputValue({
-        element: n,
-        type: getInputType(n),
-        tagName,
-        value,
-        maskInputOptions,
-        maskInputFn
-      });
-    } else if (checked) {
-      attributes.checked = checked;
-    }
-  }
-  if (tagName === "option") {
-    if (n.selected && !maskInputOptions["select"]) {
-      attributes.selected = true;
-    } else {
-      delete attributes.selected;
-    }
-  }
-  if (tagName === "dialog" && n.open) {
-    attributes.rr_open_mode = n.matches("dialog:modal") ? "modal" : "non-modal";
-  }
-  if (tagName === "canvas" && recordCanvas) {
-    if (n.__context === "2d") {
-      if (!is2DCanvasBlank(n)) {
-        attributes.rr_dataURL = n.toDataURL(
-          dataURLOptions.type,
-          dataURLOptions.quality
-        );
-      }
-    } else if (!("__context" in n)) {
-      const canvasDataURL = n.toDataURL(
-        dataURLOptions.type,
-        dataURLOptions.quality
-      );
-      const blankCanvas = doc.createElement("canvas");
-      blankCanvas.width = n.width;
-      blankCanvas.height = n.height;
-      const blankCanvasDataURL = blankCanvas.toDataURL(
-        dataURLOptions.type,
-        dataURLOptions.quality
-      );
-      if (canvasDataURL !== blankCanvasDataURL) {
-        attributes.rr_dataURL = canvasDataURL;
-      }
-    }
-  }
-  if (tagName === "img" && inlineImages) {
-    if (!canvasService) {
-      canvasService = doc.createElement("canvas");
-      canvasCtx = canvasService.getContext("2d");
-    }
-    const image = n;
-    const imageSrc = image.currentSrc || image.getAttribute("src") || "<unknown-src>";
-    const priorCrossOrigin = image.crossOrigin;
-    const recordInlineImage = () => {
-      image.removeEventListener("load", recordInlineImage);
-      try {
-        canvasService.width = image.naturalWidth;
-        canvasService.height = image.naturalHeight;
-        canvasCtx.drawImage(image, 0, 0);
-        attributes.rr_dataURL = canvasService.toDataURL(
-          dataURLOptions.type,
-          dataURLOptions.quality
-        );
-      } catch (err) {
-        if (image.crossOrigin !== "anonymous") {
-          image.crossOrigin = "anonymous";
-          if (image.complete && image.naturalWidth !== 0)
-            recordInlineImage();
-          else image.addEventListener("load", recordInlineImage);
-          return;
-        } else {
-          console.warn(
-            `Cannot inline img src=${imageSrc}! Error: ${err}`
-          );
-        }
-      }
-      if (image.crossOrigin === "anonymous") {
-        priorCrossOrigin ? attributes.crossOrigin = priorCrossOrigin : image.removeAttribute("crossorigin");
-      }
-    };
-    if (image.complete && image.naturalWidth !== 0) recordInlineImage();
-    else image.addEventListener("load", recordInlineImage);
-  }
-  if (tagName === "audio" || tagName === "video") {
-    const mediaAttributes = attributes;
-    mediaAttributes.rr_mediaState = n.paused ? "paused" : "played";
-    mediaAttributes.rr_mediaCurrentTime = n.currentTime;
-    mediaAttributes.rr_mediaPlaybackRate = n.playbackRate;
-    mediaAttributes.rr_mediaMuted = n.muted;
-    mediaAttributes.rr_mediaLoop = n.loop;
-    mediaAttributes.rr_mediaVolume = n.volume;
-  }
-  if (!newlyAddedElement) {
-    if (n.scrollLeft) {
-      attributes.rr_scrollLeft = n.scrollLeft;
-    }
-    if (n.scrollTop) {
-      attributes.rr_scrollTop = n.scrollTop;
-    }
-  }
-  if (needBlock) {
-    const { width, height } = n.getBoundingClientRect();
-    attributes = {
-      class: attributes.class,
-      rr_width: `${width}px`,
-      rr_height: `${height}px`
-    };
-  }
-  if (tagName === "iframe" && !keepIframeSrcFn(attributes.src)) {
-    if (!n.contentDocument) {
-      attributes.rr_src = attributes.src;
-    }
-    delete attributes.src;
-  }
-  let isCustomElement;
-  try {
-    if (customElements.get(tagName)) isCustomElement = true;
-  } catch (e) {
-  }
-  return {
-    type: NodeType.Element,
-    tagName,
-    attributes,
-    childNodes: [],
-    isSVG: isSVGElement(n) || void 0,
-    needBlock,
-    rootId,
-    isCustom: isCustomElement
-  };
-}
-function lowerIfExists(maybeAttr) {
-  if (maybeAttr === void 0 || maybeAttr === null) {
-    return "";
-  } else {
-    return maybeAttr.toLowerCase();
-  }
-}
-function slimDOMExcluded(sn, slimDOMOptions) {
-  if (slimDOMOptions.comment && sn.type === NodeType.Comment) {
-    return true;
-  } else if (sn.type === NodeType.Element) {
-    if (slimDOMOptions.script && // script tag
-    (sn.tagName === "script" || // (module)preload link
-    sn.tagName === "link" && (sn.attributes.rel === "preload" || sn.attributes.rel === "modulepreload") && sn.attributes.as === "script" || // prefetch link
-    sn.tagName === "link" && sn.attributes.rel === "prefetch" && typeof sn.attributes.href === "string" && extractFileExtension(sn.attributes.href) === "js")) {
-      return true;
-    } else if (slimDOMOptions.headFavicon && (sn.tagName === "link" && sn.attributes.rel === "shortcut icon" || sn.tagName === "meta" && (lowerIfExists(sn.attributes.name).match(
-      /^msapplication-tile(image|color)$/
-    ) || lowerIfExists(sn.attributes.name) === "application-name" || lowerIfExists(sn.attributes.rel) === "icon" || lowerIfExists(sn.attributes.rel) === "apple-touch-icon" || lowerIfExists(sn.attributes.rel) === "shortcut icon"))) {
-      return true;
-    } else if (sn.tagName === "meta") {
-      if (slimDOMOptions.headMetaDescKeywords && lowerIfExists(sn.attributes.name).match(/^description|keywords$/)) {
-        return true;
-      } else if (slimDOMOptions.headMetaSocial && (lowerIfExists(sn.attributes.property).match(/^(og|twitter|fb):/) || // og = opengraph (facebook)
-      lowerIfExists(sn.attributes.name).match(/^(og|twitter):/) || lowerIfExists(sn.attributes.name) === "pinterest")) {
-        return true;
-      } else if (slimDOMOptions.headMetaRobots && (lowerIfExists(sn.attributes.name) === "robots" || lowerIfExists(sn.attributes.name) === "googlebot" || lowerIfExists(sn.attributes.name) === "bingbot")) {
-        return true;
-      } else if (slimDOMOptions.headMetaHttpEquiv && sn.attributes["http-equiv"] !== void 0) {
-        return true;
-      } else if (slimDOMOptions.headMetaAuthorship && (lowerIfExists(sn.attributes.name) === "author" || lowerIfExists(sn.attributes.name) === "generator" || lowerIfExists(sn.attributes.name) === "framework" || lowerIfExists(sn.attributes.name) === "publisher" || lowerIfExists(sn.attributes.name) === "progid" || lowerIfExists(sn.attributes.property).match(/^article:/) || lowerIfExists(sn.attributes.property).match(/^product:/))) {
-        return true;
-      } else if (slimDOMOptions.headMetaVerification && (lowerIfExists(sn.attributes.name) === "google-site-verification" || lowerIfExists(sn.attributes.name) === "yandex-verification" || lowerIfExists(sn.attributes.name) === "csrf-token" || lowerIfExists(sn.attributes.name) === "p:domain_verify" || lowerIfExists(sn.attributes.name) === "verify-v1" || lowerIfExists(sn.attributes.name) === "verification" || lowerIfExists(sn.attributes.name) === "shopify-checkout-api-token")) {
-        return true;
-      }
-    }
-  }
-  return false;
-}
-function serializeNodeWithId(n, options) {
-  const {
-    doc,
-    mirror,
-    blockClass,
-    blockSelector,
-    maskTextClass,
-    maskTextSelector,
-    skipChild = false,
-    inlineStylesheet = true,
-    maskInputOptions = {},
-    maskTextFn,
-    maskInputFn,
-    slimDOMOptions,
-    dataURLOptions = {},
-    inlineImages = false,
-    recordCanvas = false,
-    onSerialize,
-    onIframeLoad,
-    iframeLoadTimeout = 5e3,
-    onStylesheetLoad,
-    stylesheetLoadTimeout = 5e3,
-    keepIframeSrcFn = () => false,
-    newlyAddedElement = false,
-    cssCaptured = false
-  } = options;
-  let { needsMask } = options;
-  let { preserveWhiteSpace = true } = options;
-  if (!needsMask) {
-    const checkAncestors = needsMask === void 0;
-    needsMask = needMaskingText(
-      n,
-      maskTextClass,
-      maskTextSelector,
-      checkAncestors
-    );
-  }
-  const _serializedNode = serializeNode(n, {
-    doc,
-    mirror,
-    blockClass,
-    blockSelector,
-    needsMask,
-    inlineStylesheet,
-    maskInputOptions,
-    maskTextFn,
-    maskInputFn,
-    dataURLOptions,
-    inlineImages,
-    recordCanvas,
-    keepIframeSrcFn,
-    newlyAddedElement,
-    cssCaptured
-  });
-  if (!_serializedNode) {
-    console.warn(n, "not serialized");
-    return null;
-  }
-  let id;
-  if (mirror.hasNode(n)) {
-    id = mirror.getId(n);
-  } else if (slimDOMExcluded(_serializedNode, slimDOMOptions) || !preserveWhiteSpace && _serializedNode.type === NodeType.Text && !_serializedNode.textContent.replace(/^\s+|\s+$/gm, "").length) {
-    id = IGNORED_NODE;
-  } else {
-    id = genId();
-  }
-  const serializedNode = Object.assign(_serializedNode, { id });
-  mirror.add(n, serializedNode);
-  if (id === IGNORED_NODE) {
-    return null;
-  }
-  if (onSerialize) {
-    onSerialize(n);
-  }
-  let recordChild = !skipChild;
-  if (serializedNode.type === NodeType.Element) {
-    recordChild = recordChild && !serializedNode.needBlock;
-    delete serializedNode.needBlock;
-    const shadowRootEl = index.shadowRoot(n);
-    if (shadowRootEl && isNativeShadowDom(shadowRootEl)) {
-      serializedNode.isShadowHost = true;
-      if (shadowRootEl.adoptedStyleSheets) {
-        serializedNode.adoptedStyleSheets = shadowRootEl.adoptedStyleSheets.map(
-          (sheet) => Array.from(sheet.cssRules).map((rule2) => rule2.cssText).join(" ")
-        );
-      }
-    }
-  }
-  if ((serializedNode.type === NodeType.Document || serializedNode.type === NodeType.Element) && recordChild) {
-    if (slimDOMOptions.headWhitespace && serializedNode.type === NodeType.Element && serializedNode.tagName === "head") {
-      preserveWhiteSpace = false;
-    }
-    const bypassOptions = {
-      doc,
-      mirror,
-      blockClass,
-      blockSelector,
-      needsMask,
-      maskTextClass,
-      maskTextSelector,
-      skipChild,
-      inlineStylesheet,
-      maskInputOptions,
-      maskTextFn,
-      maskInputFn,
-      slimDOMOptions,
-      dataURLOptions,
-      inlineImages,
-      recordCanvas,
-      preserveWhiteSpace,
-      onSerialize,
-      onIframeLoad,
-      iframeLoadTimeout,
-      onStylesheetLoad,
-      stylesheetLoadTimeout,
-      keepIframeSrcFn,
-      cssCaptured: false
-    };
-    if (serializedNode.type === NodeType.Element && serializedNode.tagName === "textarea" && serializedNode.attributes.value !== void 0) ;
-    else {
-      if (serializedNode.type === NodeType.Element && serializedNode.attributes._cssText !== void 0 && typeof serializedNode.attributes._cssText === "string") {
-        bypassOptions.cssCaptured = true;
-      }
-      for (const childN of Array.from(index.childNodes(n))) {
-        const serializedChildNode = serializeNodeWithId(childN, bypassOptions);
-        if (serializedChildNode) {
-          serializedNode.childNodes.push(serializedChildNode);
-        }
-      }
-    }
-    let shadowRootEl = null;
-    if (isElement(n) && (shadowRootEl = index.shadowRoot(n))) {
-      for (const childN of Array.from(index.childNodes(shadowRootEl))) {
-        const serializedChildNode = serializeNodeWithId(childN, bypassOptions);
-        if (serializedChildNode) {
-          isNativeShadowDom(shadowRootEl) && (serializedChildNode.isShadow = true);
-          serializedNode.childNodes.push(serializedChildNode);
-        }
-      }
-    }
-  }
-  const parent = index.parentNode(n);
-  if (parent && isShadowRoot(parent) && isNativeShadowDom(parent)) {
-    serializedNode.isShadow = true;
-  }
-  if (serializedNode.type === NodeType.Element && serializedNode.tagName === "iframe") {
-    onceIframeLoaded(
-      n,
-      () => {
-        const iframeDoc = n.contentDocument;
-        if (iframeDoc && onIframeLoad) {
-          const serializedIframeNode = serializeNodeWithId(iframeDoc, {
-            doc: iframeDoc,
-            mirror,
-            blockClass,
-            blockSelector,
-            needsMask,
-            maskTextClass,
-            maskTextSelector,
-            skipChild: false,
-            inlineStylesheet,
-            maskInputOptions,
-            maskTextFn,
-            maskInputFn,
-            slimDOMOptions,
-            dataURLOptions,
-            inlineImages,
-            recordCanvas,
-            preserveWhiteSpace,
-            onSerialize,
-            onIframeLoad,
-            iframeLoadTimeout,
-            onStylesheetLoad,
-            stylesheetLoadTimeout,
-            keepIframeSrcFn
-          });
-          if (serializedIframeNode) {
-            onIframeLoad(
-              n,
-              serializedIframeNode
-            );
-          }
-        }
-      },
-      iframeLoadTimeout
-    );
-  }
-  if (serializedNode.type === NodeType.Element && serializedNode.tagName === "link" && typeof serializedNode.attributes.rel === "string" && (serializedNode.attributes.rel === "stylesheet" || serializedNode.attributes.rel === "preload" && typeof serializedNode.attributes.href === "string" && extractFileExtension(serializedNode.attributes.href) === "css")) {
-    onceStylesheetLoaded(
-      n,
-      () => {
-        if (onStylesheetLoad) {
-          const serializedLinkNode = serializeNodeWithId(n, {
-            doc,
-            mirror,
-            blockClass,
-            blockSelector,
-            needsMask,
-            maskTextClass,
-            maskTextSelector,
-            skipChild: false,
-            inlineStylesheet,
-            maskInputOptions,
-            maskTextFn,
-            maskInputFn,
-            slimDOMOptions,
-            dataURLOptions,
-            inlineImages,
-            recordCanvas,
-            preserveWhiteSpace,
-            onSerialize,
-            onIframeLoad,
-            iframeLoadTimeout,
-            onStylesheetLoad,
-            stylesheetLoadTimeout,
-            keepIframeSrcFn
-          });
-          if (serializedLinkNode) {
-            onStylesheetLoad(
-              n,
-              serializedLinkNode
-            );
-          }
-        }
-      },
-      stylesheetLoadTimeout
-    );
-  }
-  return serializedNode;
-}
-function snapshot(n, options) {
-  const {
-    mirror = new Mirror(),
-    blockClass = "rr-block",
-    blockSelector = null,
-    maskTextClass = "rr-mask",
-    maskTextSelector = null,
-    inlineStylesheet = true,
-    inlineImages = false,
-    recordCanvas = false,
-    maskAllInputs = false,
-    maskTextFn,
-    maskInputFn,
-    slimDOM = false,
-    dataURLOptions,
-    preserveWhiteSpace,
-    onSerialize,
-    onIframeLoad,
-    iframeLoadTimeout,
-    onStylesheetLoad,
-    stylesheetLoadTimeout,
-    keepIframeSrcFn = () => false
-  } = options || {};
-  const maskInputOptions = maskAllInputs === true ? {
-    color: true,
-    date: true,
-    "datetime-local": true,
-    email: true,
-    month: true,
-    number: true,
-    range: true,
-    search: true,
-    tel: true,
-    text: true,
-    time: true,
-    url: true,
-    week: true,
-    textarea: true,
-    select: true,
-    password: true
-  } : maskAllInputs === false ? {
-    password: true
-  } : maskAllInputs;
-  const slimDOMOptions = slimDOM === true || slimDOM === "all" ? (
-    // if true: set of sensible options that should not throw away any information
-    {
-      script: true,
-      comment: true,
-      headFavicon: true,
-      headWhitespace: true,
-      headMetaDescKeywords: slimDOM === "all",
-      // destructive
-      headMetaSocial: true,
-      headMetaRobots: true,
-      headMetaHttpEquiv: true,
-      headMetaAuthorship: true,
-      headMetaVerification: true
-    }
-  ) : slimDOM === false ? {} : slimDOM;
-  return serializeNodeWithId(n, {
-    doc: n,
-    mirror,
-    blockClass,
-    blockSelector,
-    maskTextClass,
-    maskTextSelector,
-    skipChild: false,
-    inlineStylesheet,
-    maskInputOptions,
-    maskTextFn,
-    maskInputFn,
-    slimDOMOptions,
-    dataURLOptions,
-    inlineImages,
-    recordCanvas,
-    preserveWhiteSpace,
-    onSerialize,
-    onIframeLoad,
-    iframeLoadTimeout,
-    onStylesheetLoad,
-    stylesheetLoadTimeout,
-    keepIframeSrcFn,
-    newlyAddedElement: false
-  });
-}
-function visitSnapshot(node2, onVisit) {
-  function walk(current) {
-    onVisit(current);
-    if (current.type === NodeType.Document || current.type === NodeType.Element) {
-      current.childNodes.forEach(walk);
-    }
-  }
-  walk(node2);
-}
-function cleanupSnapshot() {
-  _id = 1;
-}
-const MEDIA_SELECTOR = /(max|min)-device-(width|height)/;
-const MEDIA_SELECTOR_GLOBAL = new RegExp(MEDIA_SELECTOR.source, "g");
-const mediaSelectorPlugin = {
-  postcssPlugin: "postcss-custom-selectors",
-  prepare() {
-    return {
-      postcssPlugin: "postcss-custom-selectors",
-      AtRule: function(atrule) {
-        if (atrule.params.match(MEDIA_SELECTOR_GLOBAL)) {
-          atrule.params = atrule.params.replace(MEDIA_SELECTOR_GLOBAL, "$1-$2");
-        }
-      }
-    };
-  }
-};
-const pseudoClassPlugin = {
-  postcssPlugin: "postcss-hover-classes",
-  prepare: function() {
-    const fixed = [];
-    return {
-      Rule: function(rule2) {
-        if (fixed.indexOf(rule2) !== -1) {
-          return;
-        }
-        fixed.push(rule2);
-        rule2.selectors.forEach(function(selector) {
-          if (selector.includes(":hover")) {
-            rule2.selector += ",\n" + selector.replace(/:hover/g, ".\\:hover");
-          }
-        });
-      }
-    };
-  }
-};
 function getDefaultExportFromCjs(x2) {
   return x2 && x2.__esModule && Object.prototype.hasOwnProperty.call(x2, "default") ? x2["default"] : x2;
 }
@@ -5049,6 +4105,959 @@ postcss$1.Input;
 postcss$1.Rule;
 postcss$1.Root;
 postcss$1.Node;
+const MEDIA_SELECTOR = /(max|min)-device-(width|height)/;
+const MEDIA_SELECTOR_GLOBAL = new RegExp(MEDIA_SELECTOR.source, "g");
+const mediaSelectorPlugin = {
+  postcssPlugin: "postcss-custom-selectors",
+  prepare() {
+    return {
+      postcssPlugin: "postcss-custom-selectors",
+      AtRule: function(atrule) {
+        if (atrule.params.match(MEDIA_SELECTOR_GLOBAL)) {
+          atrule.params = atrule.params.replace(MEDIA_SELECTOR_GLOBAL, "$1-$2");
+        }
+      }
+    };
+  }
+};
+const pseudoClassPlugin = {
+  postcssPlugin: "postcss-hover-classes",
+  prepare: function() {
+    const fixed = [];
+    return {
+      Rule: function(rule2) {
+        if (fixed.indexOf(rule2) !== -1) {
+          return;
+        }
+        fixed.push(rule2);
+        rule2.selectors.forEach(function(selector) {
+          if (selector.includes(":hover")) {
+            rule2.selector += ",\n" + selector.replace(/:hover/g, ".\\:hover");
+          }
+        });
+      }
+    };
+  }
+};
+let _id = 1;
+const tagNameRegex = new RegExp("[^a-z0-9-_:]");
+const IGNORED_NODE = -2;
+function genId() {
+  return _id++;
+}
+function getValidTagName(element) {
+  if (element instanceof HTMLFormElement) {
+    return "form";
+  }
+  const processedTagName = toLowerCase(element.tagName);
+  if (tagNameRegex.test(processedTagName)) {
+    return "div";
+  }
+  return processedTagName;
+}
+let canvasService;
+let canvasCtx;
+const SRCSET_NOT_SPACES = /^[^ \t\n\r\u000c]+/;
+const SRCSET_COMMAS_OR_SPACES = /^[, \t\n\r\u000c]+/;
+function getAbsoluteSrcsetString(doc, attributeValue) {
+  if (attributeValue.trim() === "") {
+    return attributeValue;
+  }
+  let pos = 0;
+  function collectCharacters(regEx) {
+    let chars;
+    const match = regEx.exec(attributeValue.substring(pos));
+    if (match) {
+      chars = match[0];
+      pos += chars.length;
+      return chars;
+    }
+    return "";
+  }
+  const output = [];
+  while (true) {
+    collectCharacters(SRCSET_COMMAS_OR_SPACES);
+    if (pos >= attributeValue.length) {
+      break;
+    }
+    let url = collectCharacters(SRCSET_NOT_SPACES);
+    if (url.slice(-1) === ",") {
+      url = absoluteToDoc(doc, url.substring(0, url.length - 1));
+      output.push(url);
+    } else {
+      let descriptorsStr = "";
+      url = absoluteToDoc(doc, url);
+      let inParens = false;
+      while (true) {
+        const c = attributeValue.charAt(pos);
+        if (c === "") {
+          output.push((url + descriptorsStr).trim());
+          break;
+        } else if (!inParens) {
+          if (c === ",") {
+            pos += 1;
+            output.push((url + descriptorsStr).trim());
+            break;
+          } else if (c === "(") {
+            inParens = true;
+          }
+        } else {
+          if (c === ")") {
+            inParens = false;
+          }
+        }
+        descriptorsStr += c;
+        pos += 1;
+      }
+    }
+  }
+  return output.join(", ");
+}
+const cachedDocument = /* @__PURE__ */ new WeakMap();
+function absoluteToDoc(doc, attributeValue) {
+  if (!attributeValue || attributeValue.trim() === "") {
+    return attributeValue;
+  }
+  return getHref(doc, attributeValue);
+}
+function isSVGElement(el) {
+  return Boolean(el.tagName === "svg" || el.ownerSVGElement);
+}
+function getHref(doc, customHref) {
+  let a = cachedDocument.get(doc);
+  if (!a) {
+    a = doc.createElement("a");
+    cachedDocument.set(doc, a);
+  }
+  if (!customHref) {
+    customHref = "";
+  } else if (customHref.startsWith("blob:") || customHref.startsWith("data:")) {
+    return customHref;
+  }
+  a.setAttribute("href", customHref);
+  return a.href;
+}
+function transformAttribute(doc, tagName, name, value) {
+  if (!value) {
+    return value;
+  }
+  if (name === "src" || name === "href" && !(tagName === "use" && value[0] === "#")) {
+    return absoluteToDoc(doc, value);
+  } else if (name === "xlink:href" && value[0] !== "#") {
+    return absoluteToDoc(doc, value);
+  } else if (name === "background" && (tagName === "table" || tagName === "td" || tagName === "th")) {
+    return absoluteToDoc(doc, value);
+  } else if (name === "srcset") {
+    return getAbsoluteSrcsetString(doc, value);
+  } else if (name === "style") {
+    return absolutifyURLs(value, getHref(doc));
+  } else if (tagName === "object" && name === "data") {
+    return absoluteToDoc(doc, value);
+  }
+  return value;
+}
+function ignoreAttribute(tagName, name, _value) {
+  return (tagName === "video" || tagName === "audio") && name === "autoplay";
+}
+function _isBlockedElement(element, blockClass, blockSelector) {
+  try {
+    if (typeof blockClass === "string") {
+      if (element.classList.contains(blockClass)) {
+        return true;
+      }
+    } else {
+      for (let eIndex = element.classList.length; eIndex--; ) {
+        const className = element.classList[eIndex];
+        if (blockClass.test(className)) {
+          return true;
+        }
+      }
+    }
+    if (blockSelector) {
+      return element.matches(blockSelector);
+    }
+  } catch (e) {
+  }
+  return false;
+}
+function classMatchesRegex(node2, regex, checkAncestors) {
+  if (!node2) return false;
+  if (node2.nodeType !== node2.ELEMENT_NODE) {
+    if (!checkAncestors) return false;
+    return classMatchesRegex(index.parentNode(node2), regex, checkAncestors);
+  }
+  for (let eIndex = node2.classList.length; eIndex--; ) {
+    const className = node2.classList[eIndex];
+    if (regex.test(className)) {
+      return true;
+    }
+  }
+  if (!checkAncestors) return false;
+  return classMatchesRegex(index.parentNode(node2), regex, checkAncestors);
+}
+function needMaskingText(node2, maskTextClass, maskTextSelector, checkAncestors) {
+  let el;
+  if (isElement(node2)) {
+    el = node2;
+    if (!index.childNodes(el).length) {
+      return false;
+    }
+  } else if (index.parentElement(node2) === null) {
+    return false;
+  } else {
+    el = index.parentElement(node2);
+  }
+  try {
+    if (typeof maskTextClass === "string") {
+      if (checkAncestors) {
+        if (el.closest(`.${maskTextClass}`)) return true;
+      } else {
+        if (el.classList.contains(maskTextClass)) return true;
+      }
+    } else {
+      if (classMatchesRegex(el, maskTextClass, checkAncestors)) return true;
+    }
+    if (maskTextSelector) {
+      if (checkAncestors) {
+        if (el.closest(maskTextSelector)) return true;
+      } else {
+        if (el.matches(maskTextSelector)) return true;
+      }
+    }
+  } catch (e) {
+  }
+  return false;
+}
+function onceIframeLoaded(iframeEl, listener, iframeLoadTimeout) {
+  const win = iframeEl.contentWindow;
+  if (!win) {
+    return;
+  }
+  let fired = false;
+  let readyState;
+  try {
+    readyState = win.document.readyState;
+  } catch (error) {
+    return;
+  }
+  if (readyState !== "complete") {
+    const timer = setTimeout(() => {
+      if (!fired) {
+        listener();
+        fired = true;
+      }
+    }, iframeLoadTimeout);
+    iframeEl.addEventListener("load", () => {
+      clearTimeout(timer);
+      fired = true;
+      listener();
+    });
+    return;
+  }
+  const blankUrl = "about:blank";
+  if (win.location.href !== blankUrl || iframeEl.src === blankUrl || iframeEl.src === "") {
+    setTimeout(listener, 0);
+    return iframeEl.addEventListener("load", listener);
+  }
+  iframeEl.addEventListener("load", listener);
+}
+function onceStylesheetLoaded(link, listener, styleSheetLoadTimeout) {
+  let fired = false;
+  let styleSheetLoaded;
+  try {
+    styleSheetLoaded = link.sheet;
+  } catch (error) {
+    return;
+  }
+  if (styleSheetLoaded) return;
+  const timer = setTimeout(() => {
+    if (!fired) {
+      listener();
+      fired = true;
+    }
+  }, styleSheetLoadTimeout);
+  link.addEventListener("load", () => {
+    clearTimeout(timer);
+    fired = true;
+    listener();
+  });
+}
+function serializeNode(n, options) {
+  const {
+    doc,
+    mirror,
+    blockClass,
+    blockSelector,
+    needsMask,
+    inlineStylesheet,
+    maskInputOptions = {},
+    maskTextFn,
+    maskInputFn,
+    dataURLOptions = {},
+    inlineImages,
+    recordCanvas,
+    keepIframeSrcFn,
+    newlyAddedElement = false,
+    cssCaptured = false
+  } = options;
+  const rootId = getRootId(doc, mirror);
+  switch (n.nodeType) {
+    case n.DOCUMENT_NODE:
+      if (n.compatMode !== "CSS1Compat") {
+        return {
+          type: NodeType.Document,
+          childNodes: [],
+          compatMode: n.compatMode
+          // probably "BackCompat"
+        };
+      } else {
+        return {
+          type: NodeType.Document,
+          childNodes: []
+        };
+      }
+    case n.DOCUMENT_TYPE_NODE:
+      return {
+        type: NodeType.DocumentType,
+        name: n.name,
+        publicId: n.publicId,
+        systemId: n.systemId,
+        rootId
+      };
+    case n.ELEMENT_NODE:
+      return serializeElementNode(n, {
+        doc,
+        blockClass,
+        blockSelector,
+        inlineStylesheet,
+        maskInputOptions,
+        maskInputFn,
+        dataURLOptions,
+        inlineImages,
+        recordCanvas,
+        keepIframeSrcFn,
+        newlyAddedElement,
+        rootId
+      });
+    case n.TEXT_NODE:
+      return serializeTextNode(n, {
+        doc,
+        needsMask,
+        maskTextFn,
+        rootId,
+        cssCaptured
+      });
+    case n.CDATA_SECTION_NODE:
+      return {
+        type: NodeType.CDATA,
+        textContent: "",
+        rootId
+      };
+    case n.COMMENT_NODE:
+      return {
+        type: NodeType.Comment,
+        textContent: index.textContent(n) || "",
+        rootId
+      };
+    default:
+      return false;
+  }
+}
+function getRootId(doc, mirror) {
+  if (!mirror.hasNode(doc)) return void 0;
+  const docId = mirror.getId(doc);
+  return docId === 1 ? void 0 : docId;
+}
+function serializeTextNode(n, options) {
+  const { needsMask, maskTextFn, rootId, cssCaptured } = options;
+  const parent = index.parentNode(n);
+  const parentTagName = parent && parent.tagName;
+  let textContent2 = "";
+  const isStyle = parentTagName === "STYLE" ? true : void 0;
+  const isScript = parentTagName === "SCRIPT" ? true : void 0;
+  if (isScript) {
+    textContent2 = "SCRIPT_PLACEHOLDER";
+  } else if (!cssCaptured) {
+    textContent2 = index.textContent(n);
+    if (isStyle && textContent2) {
+      textContent2 = absolutifyURLs(textContent2, getHref(options.doc));
+    }
+  }
+  if (!isStyle && !isScript && textContent2 && needsMask) {
+    textContent2 = maskTextFn ? maskTextFn(textContent2, index.parentElement(n)) : textContent2.replace(/[\S]/g, "*");
+  }
+  return {
+    type: NodeType.Text,
+    textContent: textContent2 || "",
+    rootId
+  };
+}
+function extractHoverPseudoClass(cssText) {
+  const ast = postcss$1([
+    mediaSelectorPlugin,
+    pseudoClassPlugin
+  ]).process(cssText);
+  const result2 = ast.css;
+  return result2;
+}
+function serializeElementNode(n, options) {
+  const {
+    doc,
+    blockClass,
+    blockSelector,
+    inlineStylesheet,
+    maskInputOptions = {},
+    maskInputFn,
+    dataURLOptions = {},
+    inlineImages,
+    recordCanvas,
+    keepIframeSrcFn,
+    newlyAddedElement = false,
+    rootId
+  } = options;
+  const needBlock = _isBlockedElement(n, blockClass, blockSelector);
+  const tagName = getValidTagName(n);
+  let attributes = {};
+  const len = n.attributes.length;
+  for (let i = 0; i < len; i++) {
+    const attr = n.attributes[i];
+    if (!ignoreAttribute(tagName, attr.name, attr.value)) {
+      attributes[attr.name] = transformAttribute(
+        doc,
+        tagName,
+        toLowerCase(attr.name),
+        attr.value
+      );
+    }
+  }
+  if (tagName === "link" && inlineStylesheet) {
+    const stylesheet = Array.from(doc.styleSheets).find((s) => {
+      return s.href === n.href;
+    });
+    let cssText = null;
+    if (stylesheet) {
+      cssText = stringifyStylesheet(stylesheet);
+    }
+    if (cssText) {
+      delete attributes.rel;
+      delete attributes.href;
+      attributes._cssText = cssText;
+    }
+  }
+  if (tagName === "style" && n.sheet) {
+    let cssText = stringifyStylesheet(
+      n.sheet
+    );
+    if (cssText) {
+      if (n.childNodes.length > 1) {
+        cssText = markCssSplits(cssText, n);
+      }
+      cssText = extractHoverPseudoClass(cssText);
+      attributes._cssText = cssText;
+    }
+  }
+  if (tagName === "input" || tagName === "textarea" || tagName === "select") {
+    const value = n.value;
+    const checked = n.checked;
+    if (attributes.type !== "radio" && attributes.type !== "checkbox" && attributes.type !== "submit" && attributes.type !== "button" && value) {
+      attributes.value = maskInputValue({
+        element: n,
+        type: getInputType(n),
+        tagName,
+        value,
+        maskInputOptions,
+        maskInputFn
+      });
+    } else if (checked) {
+      attributes.checked = checked;
+    }
+  }
+  if (tagName === "option") {
+    if (n.selected && !maskInputOptions["select"]) {
+      attributes.selected = true;
+    } else {
+      delete attributes.selected;
+    }
+  }
+  if (tagName === "dialog" && n.open) {
+    attributes.rr_open_mode = n.matches("dialog:modal") ? "modal" : "non-modal";
+  }
+  if (tagName === "canvas" && recordCanvas) {
+    if (n.__context === "2d") {
+      if (!is2DCanvasBlank(n)) {
+        attributes.rr_dataURL = n.toDataURL(
+          dataURLOptions.type,
+          dataURLOptions.quality
+        );
+      }
+    } else if (!("__context" in n)) {
+      const canvasDataURL = n.toDataURL(
+        dataURLOptions.type,
+        dataURLOptions.quality
+      );
+      const blankCanvas = doc.createElement("canvas");
+      blankCanvas.width = n.width;
+      blankCanvas.height = n.height;
+      const blankCanvasDataURL = blankCanvas.toDataURL(
+        dataURLOptions.type,
+        dataURLOptions.quality
+      );
+      if (canvasDataURL !== blankCanvasDataURL) {
+        attributes.rr_dataURL = canvasDataURL;
+      }
+    }
+  }
+  if (tagName === "img" && inlineImages) {
+    if (!canvasService) {
+      canvasService = doc.createElement("canvas");
+      canvasCtx = canvasService.getContext("2d");
+    }
+    const image = n;
+    const imageSrc = image.currentSrc || image.getAttribute("src") || "<unknown-src>";
+    const priorCrossOrigin = image.crossOrigin;
+    const recordInlineImage = () => {
+      image.removeEventListener("load", recordInlineImage);
+      try {
+        canvasService.width = image.naturalWidth;
+        canvasService.height = image.naturalHeight;
+        canvasCtx.drawImage(image, 0, 0);
+        attributes.rr_dataURL = canvasService.toDataURL(
+          dataURLOptions.type,
+          dataURLOptions.quality
+        );
+      } catch (err) {
+        if (image.crossOrigin !== "anonymous") {
+          image.crossOrigin = "anonymous";
+          if (image.complete && image.naturalWidth !== 0)
+            recordInlineImage();
+          else image.addEventListener("load", recordInlineImage);
+          return;
+        } else {
+          console.warn(
+            `Cannot inline img src=${imageSrc}! Error: ${err}`
+          );
+        }
+      }
+      if (image.crossOrigin === "anonymous") {
+        priorCrossOrigin ? attributes.crossOrigin = priorCrossOrigin : image.removeAttribute("crossorigin");
+      }
+    };
+    if (image.complete && image.naturalWidth !== 0) recordInlineImage();
+    else image.addEventListener("load", recordInlineImage);
+  }
+  if (tagName === "audio" || tagName === "video") {
+    const mediaAttributes = attributes;
+    mediaAttributes.rr_mediaState = n.paused ? "paused" : "played";
+    mediaAttributes.rr_mediaCurrentTime = n.currentTime;
+    mediaAttributes.rr_mediaPlaybackRate = n.playbackRate;
+    mediaAttributes.rr_mediaMuted = n.muted;
+    mediaAttributes.rr_mediaLoop = n.loop;
+    mediaAttributes.rr_mediaVolume = n.volume;
+  }
+  if (!newlyAddedElement) {
+    if (n.scrollLeft) {
+      attributes.rr_scrollLeft = n.scrollLeft;
+    }
+    if (n.scrollTop) {
+      attributes.rr_scrollTop = n.scrollTop;
+    }
+  }
+  if (needBlock) {
+    const { width, height } = n.getBoundingClientRect();
+    attributes = {
+      class: attributes.class,
+      rr_width: `${width}px`,
+      rr_height: `${height}px`
+    };
+  }
+  if (tagName === "iframe" && !keepIframeSrcFn(attributes.src)) {
+    if (!n.contentDocument) {
+      attributes.rr_src = attributes.src;
+    }
+    delete attributes.src;
+  }
+  let isCustomElement;
+  try {
+    if (customElements.get(tagName)) isCustomElement = true;
+  } catch (e) {
+  }
+  return {
+    type: NodeType.Element,
+    tagName,
+    attributes,
+    childNodes: [],
+    isSVG: isSVGElement(n) || void 0,
+    needBlock,
+    rootId,
+    isCustom: isCustomElement
+  };
+}
+function lowerIfExists(maybeAttr) {
+  if (maybeAttr === void 0 || maybeAttr === null) {
+    return "";
+  } else {
+    return maybeAttr.toLowerCase();
+  }
+}
+function slimDOMExcluded(sn, slimDOMOptions) {
+  if (slimDOMOptions.comment && sn.type === NodeType.Comment) {
+    return true;
+  } else if (sn.type === NodeType.Element) {
+    if (slimDOMOptions.script && // script tag
+    (sn.tagName === "script" || // (module)preload link
+    sn.tagName === "link" && (sn.attributes.rel === "preload" || sn.attributes.rel === "modulepreload") && sn.attributes.as === "script" || // prefetch link
+    sn.tagName === "link" && sn.attributes.rel === "prefetch" && typeof sn.attributes.href === "string" && extractFileExtension(sn.attributes.href) === "js")) {
+      return true;
+    } else if (slimDOMOptions.headFavicon && (sn.tagName === "link" && sn.attributes.rel === "shortcut icon" || sn.tagName === "meta" && (lowerIfExists(sn.attributes.name).match(
+      /^msapplication-tile(image|color)$/
+    ) || lowerIfExists(sn.attributes.name) === "application-name" || lowerIfExists(sn.attributes.rel) === "icon" || lowerIfExists(sn.attributes.rel) === "apple-touch-icon" || lowerIfExists(sn.attributes.rel) === "shortcut icon"))) {
+      return true;
+    } else if (sn.tagName === "meta") {
+      if (slimDOMOptions.headMetaDescKeywords && lowerIfExists(sn.attributes.name).match(/^description|keywords$/)) {
+        return true;
+      } else if (slimDOMOptions.headMetaSocial && (lowerIfExists(sn.attributes.property).match(/^(og|twitter|fb):/) || // og = opengraph (facebook)
+      lowerIfExists(sn.attributes.name).match(/^(og|twitter):/) || lowerIfExists(sn.attributes.name) === "pinterest")) {
+        return true;
+      } else if (slimDOMOptions.headMetaRobots && (lowerIfExists(sn.attributes.name) === "robots" || lowerIfExists(sn.attributes.name) === "googlebot" || lowerIfExists(sn.attributes.name) === "bingbot")) {
+        return true;
+      } else if (slimDOMOptions.headMetaHttpEquiv && sn.attributes["http-equiv"] !== void 0) {
+        return true;
+      } else if (slimDOMOptions.headMetaAuthorship && (lowerIfExists(sn.attributes.name) === "author" || lowerIfExists(sn.attributes.name) === "generator" || lowerIfExists(sn.attributes.name) === "framework" || lowerIfExists(sn.attributes.name) === "publisher" || lowerIfExists(sn.attributes.name) === "progid" || lowerIfExists(sn.attributes.property).match(/^article:/) || lowerIfExists(sn.attributes.property).match(/^product:/))) {
+        return true;
+      } else if (slimDOMOptions.headMetaVerification && (lowerIfExists(sn.attributes.name) === "google-site-verification" || lowerIfExists(sn.attributes.name) === "yandex-verification" || lowerIfExists(sn.attributes.name) === "csrf-token" || lowerIfExists(sn.attributes.name) === "p:domain_verify" || lowerIfExists(sn.attributes.name) === "verify-v1" || lowerIfExists(sn.attributes.name) === "verification" || lowerIfExists(sn.attributes.name) === "shopify-checkout-api-token")) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+function serializeNodeWithId(n, options) {
+  const {
+    doc,
+    mirror,
+    blockClass,
+    blockSelector,
+    maskTextClass,
+    maskTextSelector,
+    skipChild = false,
+    inlineStylesheet = true,
+    maskInputOptions = {},
+    maskTextFn,
+    maskInputFn,
+    slimDOMOptions,
+    dataURLOptions = {},
+    inlineImages = false,
+    recordCanvas = false,
+    onSerialize,
+    onIframeLoad,
+    iframeLoadTimeout = 5e3,
+    onStylesheetLoad,
+    stylesheetLoadTimeout = 5e3,
+    keepIframeSrcFn = () => false,
+    newlyAddedElement = false,
+    cssCaptured = false
+  } = options;
+  let { needsMask } = options;
+  let { preserveWhiteSpace = true } = options;
+  if (!needsMask) {
+    const checkAncestors = needsMask === void 0;
+    needsMask = needMaskingText(
+      n,
+      maskTextClass,
+      maskTextSelector,
+      checkAncestors
+    );
+  }
+  const _serializedNode = serializeNode(n, {
+    doc,
+    mirror,
+    blockClass,
+    blockSelector,
+    needsMask,
+    inlineStylesheet,
+    maskInputOptions,
+    maskTextFn,
+    maskInputFn,
+    dataURLOptions,
+    inlineImages,
+    recordCanvas,
+    keepIframeSrcFn,
+    newlyAddedElement,
+    cssCaptured
+  });
+  if (!_serializedNode) {
+    console.warn(n, "not serialized");
+    return null;
+  }
+  let id;
+  if (mirror.hasNode(n)) {
+    id = mirror.getId(n);
+  } else if (slimDOMExcluded(_serializedNode, slimDOMOptions) || !preserveWhiteSpace && _serializedNode.type === NodeType.Text && !_serializedNode.textContent.replace(/^\s+|\s+$/gm, "").length) {
+    id = IGNORED_NODE;
+  } else {
+    id = genId();
+  }
+  const serializedNode = Object.assign(_serializedNode, { id });
+  mirror.add(n, serializedNode);
+  if (id === IGNORED_NODE) {
+    return null;
+  }
+  if (onSerialize) {
+    onSerialize(n);
+  }
+  let recordChild = !skipChild;
+  if (serializedNode.type === NodeType.Element) {
+    recordChild = recordChild && !serializedNode.needBlock;
+    delete serializedNode.needBlock;
+    const shadowRootEl = index.shadowRoot(n);
+    if (shadowRootEl && isNativeShadowDom(shadowRootEl)) {
+      serializedNode.isShadowHost = true;
+      if (shadowRootEl.adoptedStyleSheets) {
+        serializedNode.adoptedStyleSheets = shadowRootEl.adoptedStyleSheets.map(
+          (sheet) => Array.from(sheet.cssRules).map((rule2) => rule2.cssText).join(" ")
+        );
+      }
+    }
+  }
+  if ((serializedNode.type === NodeType.Document || serializedNode.type === NodeType.Element) && recordChild) {
+    if (slimDOMOptions.headWhitespace && serializedNode.type === NodeType.Element && serializedNode.tagName === "head") {
+      preserveWhiteSpace = false;
+    }
+    const bypassOptions = {
+      doc,
+      mirror,
+      blockClass,
+      blockSelector,
+      needsMask,
+      maskTextClass,
+      maskTextSelector,
+      skipChild,
+      inlineStylesheet,
+      maskInputOptions,
+      maskTextFn,
+      maskInputFn,
+      slimDOMOptions,
+      dataURLOptions,
+      inlineImages,
+      recordCanvas,
+      preserveWhiteSpace,
+      onSerialize,
+      onIframeLoad,
+      iframeLoadTimeout,
+      onStylesheetLoad,
+      stylesheetLoadTimeout,
+      keepIframeSrcFn,
+      cssCaptured: false
+    };
+    if (serializedNode.type === NodeType.Element && serializedNode.tagName === "textarea" && serializedNode.attributes.value !== void 0) ;
+    else {
+      if (serializedNode.type === NodeType.Element && serializedNode.attributes._cssText !== void 0 && typeof serializedNode.attributes._cssText === "string") {
+        bypassOptions.cssCaptured = true;
+      }
+      for (const childN of Array.from(index.childNodes(n))) {
+        const serializedChildNode = serializeNodeWithId(childN, bypassOptions);
+        if (serializedChildNode) {
+          serializedNode.childNodes.push(serializedChildNode);
+        }
+      }
+    }
+    let shadowRootEl = null;
+    if (isElement(n) && (shadowRootEl = index.shadowRoot(n))) {
+      for (const childN of Array.from(index.childNodes(shadowRootEl))) {
+        const serializedChildNode = serializeNodeWithId(childN, bypassOptions);
+        if (serializedChildNode) {
+          isNativeShadowDom(shadowRootEl) && (serializedChildNode.isShadow = true);
+          serializedNode.childNodes.push(serializedChildNode);
+        }
+      }
+    }
+  }
+  const parent = index.parentNode(n);
+  if (parent && isShadowRoot(parent) && isNativeShadowDom(parent)) {
+    serializedNode.isShadow = true;
+  }
+  if (serializedNode.type === NodeType.Element && serializedNode.tagName === "iframe") {
+    onceIframeLoaded(
+      n,
+      () => {
+        const iframeDoc = n.contentDocument;
+        if (iframeDoc && onIframeLoad) {
+          const serializedIframeNode = serializeNodeWithId(iframeDoc, {
+            doc: iframeDoc,
+            mirror,
+            blockClass,
+            blockSelector,
+            needsMask,
+            maskTextClass,
+            maskTextSelector,
+            skipChild: false,
+            inlineStylesheet,
+            maskInputOptions,
+            maskTextFn,
+            maskInputFn,
+            slimDOMOptions,
+            dataURLOptions,
+            inlineImages,
+            recordCanvas,
+            preserveWhiteSpace,
+            onSerialize,
+            onIframeLoad,
+            iframeLoadTimeout,
+            onStylesheetLoad,
+            stylesheetLoadTimeout,
+            keepIframeSrcFn
+          });
+          if (serializedIframeNode) {
+            onIframeLoad(
+              n,
+              serializedIframeNode
+            );
+          }
+        }
+      },
+      iframeLoadTimeout
+    );
+  }
+  if (serializedNode.type === NodeType.Element && serializedNode.tagName === "link" && typeof serializedNode.attributes.rel === "string" && (serializedNode.attributes.rel === "stylesheet" || serializedNode.attributes.rel === "preload" && typeof serializedNode.attributes.href === "string" && extractFileExtension(serializedNode.attributes.href) === "css")) {
+    onceStylesheetLoaded(
+      n,
+      () => {
+        if (onStylesheetLoad) {
+          const serializedLinkNode = serializeNodeWithId(n, {
+            doc,
+            mirror,
+            blockClass,
+            blockSelector,
+            needsMask,
+            maskTextClass,
+            maskTextSelector,
+            skipChild: false,
+            inlineStylesheet,
+            maskInputOptions,
+            maskTextFn,
+            maskInputFn,
+            slimDOMOptions,
+            dataURLOptions,
+            inlineImages,
+            recordCanvas,
+            preserveWhiteSpace,
+            onSerialize,
+            onIframeLoad,
+            iframeLoadTimeout,
+            onStylesheetLoad,
+            stylesheetLoadTimeout,
+            keepIframeSrcFn
+          });
+          if (serializedLinkNode) {
+            onStylesheetLoad(
+              n,
+              serializedLinkNode
+            );
+          }
+        }
+      },
+      stylesheetLoadTimeout
+    );
+  }
+  return serializedNode;
+}
+function snapshot(n, options) {
+  const {
+    mirror = new Mirror(),
+    blockClass = "rr-block",
+    blockSelector = null,
+    maskTextClass = "rr-mask",
+    maskTextSelector = null,
+    inlineStylesheet = true,
+    inlineImages = false,
+    recordCanvas = false,
+    maskAllInputs = false,
+    maskTextFn,
+    maskInputFn,
+    slimDOM = false,
+    dataURLOptions,
+    preserveWhiteSpace,
+    onSerialize,
+    onIframeLoad,
+    iframeLoadTimeout,
+    onStylesheetLoad,
+    stylesheetLoadTimeout,
+    keepIframeSrcFn = () => false
+  } = options || {};
+  const maskInputOptions = maskAllInputs === true ? {
+    color: true,
+    date: true,
+    "datetime-local": true,
+    email: true,
+    month: true,
+    number: true,
+    range: true,
+    search: true,
+    tel: true,
+    text: true,
+    time: true,
+    url: true,
+    week: true,
+    textarea: true,
+    select: true,
+    password: true
+  } : maskAllInputs === false ? {
+    password: true
+  } : maskAllInputs;
+  const slimDOMOptions = slimDOM === true || slimDOM === "all" ? (
+    // if true: set of sensible options that should not throw away any information
+    {
+      script: true,
+      comment: true,
+      headFavicon: true,
+      headWhitespace: true,
+      headMetaDescKeywords: slimDOM === "all",
+      // destructive
+      headMetaSocial: true,
+      headMetaRobots: true,
+      headMetaHttpEquiv: true,
+      headMetaAuthorship: true,
+      headMetaVerification: true
+    }
+  ) : slimDOM === false ? {} : slimDOM;
+  return serializeNodeWithId(n, {
+    doc: n,
+    mirror,
+    blockClass,
+    blockSelector,
+    maskTextClass,
+    maskTextSelector,
+    skipChild: false,
+    inlineStylesheet,
+    maskInputOptions,
+    maskTextFn,
+    maskInputFn,
+    slimDOMOptions,
+    dataURLOptions,
+    inlineImages,
+    recordCanvas,
+    preserveWhiteSpace,
+    onSerialize,
+    onIframeLoad,
+    iframeLoadTimeout,
+    onStylesheetLoad,
+    stylesheetLoadTimeout,
+    keepIframeSrcFn,
+    newlyAddedElement: false
+  });
+}
+function visitSnapshot(node2, onVisit) {
+  function walk(current) {
+    onVisit(current);
+    if (current.type === NodeType.Document || current.type === NodeType.Element) {
+      current.childNodes.forEach(walk);
+    }
+  }
+  walk(node2);
+}
+function cleanupSnapshot() {
+  _id = 1;
+}
 const tagMap = {
   script: "noscript",
   // camel case svg element tag names
@@ -5144,7 +5153,7 @@ function buildStyleNode(n, styleEl, cssText, options) {
   }
 }
 function buildNode(n, options) {
-  var _a;
+  var _a, _b, _c;
   const { doc, hackCss, cache } = options;
   switch (n.type) {
     case NodeType.Document:
@@ -5280,14 +5289,15 @@ function buildNode(n, options) {
       }
       if (n.isShadowHost) {
         if (!node2.shadowRoot) {
-          node2.attachShadow({ mode: "open" });
-          n.chromaticAdoptedStylesheets.forEach(
-            // @ts-expect-error TODO
-            (chromaticAdoptedStylesheet) => {
-              var _a2;
-              const styleSheet = new CSSStyleSheet();
-              styleSheet.replaceSync(chromaticAdoptedStylesheet);
-              (_a2 = node2.shadowRoot) == null ? void 0 : _a2.adoptedStyleSheets.push(styleSheet);
+          const shadow = node2.attachShadow({ mode: "open" });
+          const targetHost = (_b = node2.ownerDocument) == null ? void 0 : _b.defaultView;
+          (_c = n.adoptedStyleSheets) == null ? void 0 : _c.forEach(
+            (adoptedStyleSheets) => {
+              if (!targetHost) return;
+              const styleSheet = new targetHost.CSSStyleSheet();
+              styleSheet.replaceSync(adoptedStyleSheets);
+              if (node2.shadowRoot)
+                shadow.adoptedStyleSheets = [styleSheet];
             }
           );
         } else {
