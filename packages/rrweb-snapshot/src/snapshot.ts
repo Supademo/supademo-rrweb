@@ -35,6 +35,8 @@ import dom from '@supademo/rrweb-utils';
 import postcss from 'postcss';
 import { mediaSelectorPlugin, pseudoClassPlugin } from './css';
 
+export type IdGenerator = () => number;
+
 let _id = 1;
 const tagNameRegex = new RegExp('[^a-z0-9-_:]');
 
@@ -957,6 +959,7 @@ export function serializeNodeWithId(
     ) => unknown;
     stylesheetLoadTimeout?: number;
     cssCaptured?: boolean;
+    customGenId?: () => number;
   },
 ): serializedNodeWithId | null {
   const {
@@ -983,6 +986,7 @@ export function serializeNodeWithId(
     keepIframeSrcFn = () => false,
     newlyAddedElement = false,
     cssCaptured = false,
+    customGenId = genId,
   } = options;
   let { needsMask } = options;
   let { preserveWhiteSpace = true } = options;
@@ -1033,7 +1037,7 @@ export function serializeNodeWithId(
   ) {
     id = IGNORED_NODE;
   } else {
-    id = genId();
+    id = customGenId();
   }
 
   const serializedNode = Object.assign(_serializedNode, { id });
@@ -1277,6 +1281,7 @@ function snapshot(
     ) => unknown;
     stylesheetLoadTimeout?: number;
     keepIframeSrcFn?: KeepIframeSrcFn;
+    customGenId?: () => number;
   },
 ): serializedNodeWithId | null {
   const {
@@ -1300,6 +1305,7 @@ function snapshot(
     onStylesheetLoad,
     stylesheetLoadTimeout,
     keepIframeSrcFn = () => false,
+    customGenId = genId
   } = options || {};
   const maskInputOptions: MaskInputOptions =
     maskAllInputs === true
@@ -1368,6 +1374,7 @@ function snapshot(
     stylesheetLoadTimeout,
     keepIframeSrcFn,
     newlyAddedElement: false,
+    customGenId
   });
 }
 

@@ -4731,7 +4731,8 @@ function serializeNodeWithId(n, options) {
     stylesheetLoadTimeout = 5e3,
     keepIframeSrcFn = () => false,
     newlyAddedElement = false,
-    cssCaptured = false
+    cssCaptured = false,
+    customGenId = genId
   } = options;
   let { needsMask } = options;
   let { preserveWhiteSpace = true } = options;
@@ -4771,7 +4772,7 @@ function serializeNodeWithId(n, options) {
   } else if (slimDOMExcluded(_serializedNode, slimDOMOptions) || !preserveWhiteSpace && _serializedNode.type === NodeType.Text && !_serializedNode.textContent.replace(/^\s+|\s+$/gm, "").length) {
     id = IGNORED_NODE;
   } else {
-    id = genId();
+    id = customGenId();
   }
   const serializedNode = Object.assign(_serializedNode, { id });
   mirror.add(n, serializedNode);
@@ -4958,7 +4959,8 @@ function snapshot(n, options) {
     iframeLoadTimeout,
     onStylesheetLoad,
     stylesheetLoadTimeout,
-    keepIframeSrcFn = () => false
+    keepIframeSrcFn = () => false,
+    customGenId = genId
   } = options || {};
   const maskInputOptions = maskAllInputs === true ? {
     color: true,
@@ -5019,7 +5021,8 @@ function snapshot(n, options) {
     onStylesheetLoad,
     stylesheetLoadTimeout,
     keepIframeSrcFn,
-    newlyAddedElement: false
+    newlyAddedElement: false,
+    customGenId
   });
 }
 function visitSnapshot(node2, onVisit) {

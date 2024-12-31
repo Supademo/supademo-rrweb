@@ -4760,7 +4760,8 @@ function serializeNodeWithId(n2, options) {
     stylesheetLoadTimeout = 5e3,
     keepIframeSrcFn = () => false,
     newlyAddedElement = false,
-    cssCaptured = false
+    cssCaptured = false,
+    customGenId = genId
   } = options;
   let { needsMask } = options;
   let { preserveWhiteSpace = true } = options;
@@ -4800,7 +4801,7 @@ function serializeNodeWithId(n2, options) {
   } else if (slimDOMExcluded(_serializedNode, slimDOMOptions) || !preserveWhiteSpace && _serializedNode.type === NodeType$3.Text && !_serializedNode.textContent.replace(/^\s+|\s+$/gm, "").length) {
     id = IGNORED_NODE;
   } else {
-    id = genId();
+    id = customGenId();
   }
   const serializedNode = Object.assign(_serializedNode, { id });
   mirror2.add(n2, serializedNode);
@@ -4987,7 +4988,8 @@ function snapshot(n2, options) {
     iframeLoadTimeout,
     onStylesheetLoad,
     stylesheetLoadTimeout,
-    keepIframeSrcFn = () => false
+    keepIframeSrcFn = () => false,
+    customGenId = genId
   } = options || {};
   const maskInputOptions = maskAllInputs === true ? {
     color: true,
@@ -5048,7 +5050,8 @@ function snapshot(n2, options) {
     onStylesheetLoad,
     stylesheetLoadTimeout,
     keepIframeSrcFn,
-    newlyAddedElement: false
+    newlyAddedElement: false,
+    customGenId
   });
 }
 var __defProp22 = Object.defineProperty;

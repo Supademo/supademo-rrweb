@@ -168,6 +168,7 @@ export declare function serializeNodeWithId(n: Node, options: {
     onStylesheetLoad?: (linkNode: HTMLLinkElement, node: serializedElementNodeWithId) => unknown;
     stylesheetLoadTimeout?: number;
     cssCaptured?: boolean;
+    customGenId?: () => number;
 }): serializedNodeWithId | null;
 
 export declare type SlimDOMOptions = Partial<{
@@ -205,6 +206,7 @@ export declare function snapshot(n: Document, options?: {
     onStylesheetLoad?: (linkNode: HTMLLinkElement, node: serializedElementNodeWithId) => unknown;
     stylesheetLoadTimeout?: number;
     keepIframeSrcFn?: KeepIframeSrcFn;
+    customGenId?: () => number;
 }): serializedNodeWithId | null;
 
 export declare function splitCssText(cssText: string, style: HTMLStyleElement): string[];
