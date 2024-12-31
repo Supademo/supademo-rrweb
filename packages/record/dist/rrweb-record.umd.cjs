@@ -463,6 +463,7 @@ function normalizeCssString(cssText) {
 }
 function splitCssText(cssText, style) {
   const childNodes2 = Array.from(style.childNodes);
+  debugger;
   const splits = [];
   if (childNodes2.length > 1 && cssText && typeof cssText === "string") {
     const cssTextNorm = normalizeCssString(cssText);
@@ -4545,7 +4546,16 @@ function serializeElementNode(n2, options) {
     );
     if (cssText) {
       if (n2.childNodes.length > 1) {
-        cssText = markCssSplits(cssText, n2);
+        cssText = (() => {
+          try {
+            cssText = markCssSplits(cssText, n2) || "";
+          } catch (error) {
+            if (true) {
+              console.warn("Failed to mark CSS splits:", error);
+            }
+            return cssText;
+          }
+        })() || "";
       }
       cssText = extractHoverPseudoClass(cssText);
       attributes._cssText = cssText;

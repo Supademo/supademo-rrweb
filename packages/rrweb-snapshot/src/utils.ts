@@ -464,6 +464,7 @@ export function splitCssText(
   style: HTMLStyleElement,
 ): string[] {
   const childNodes = Array.from(style.childNodes);
+  debugger;
   const splits: string[] = [];
   if (childNodes.length > 1 && cssText && typeof cssText === 'string') {
     const cssTextNorm = normalizeCssString(cssText);

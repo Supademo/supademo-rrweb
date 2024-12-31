@@ -624,7 +624,18 @@ function serializeElementNode(
     );
     if (cssText) {
       if (n.childNodes.length > 1) {
-        cssText = markCssSplits(cssText, n as HTMLStyleElement);
+        // ? Supademo: Prevent markCssSplits from throwing on weird style tags
+        // Old -> cssText = markCssSplits(cssText, n as HTMLStyleElement);
+        cssText = (() => {
+          try {
+            cssText = markCssSplits(cssText, n as HTMLStyleElement) || '';
+          } catch (error) {
+            if (process.env.NODE_ENV !== 'production') {
+              console.warn('Failed to mark CSS splits:', error);
+            }
+            return cssText;
+          }
+        })() || '';
       }
       cssText = extractHoverPseudoClass(cssText);
       attributes._cssText = cssText;
@@ -1038,24 +1049,6 @@ export function serializeNodeWithId(
   }
   let recordChild = !skipChild;
 
-  // ? Supademo: Support for adoptedStyleSheets in shadow DOM
-  // if (n.adoptedStyleSheets) {
-  //   // @ts-expect-error TODO
-  //   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-  //   serializedNode.chromaticAdoptedStylesheets =
-  //     // @ts-expect-error TODO
-  //     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-  //     n.adoptedStyleSheets.map(
-  //       // @ts-expect-error TODO
-  //       (sheet) =>
-  //         // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
-  //         Array.from(sheet.cssRules)
-  //           // @ts-expect-error TODO
-  //           // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-  //           .map((rule) => rule.cssText)
-  //           .join(' '),
-  //     );
-  // }
   if (serializedNode.type === NodeType.Element) {
     recordChild = recordChild && !serializedNode.needBlock;
     delete serializedNode.needBlock;
