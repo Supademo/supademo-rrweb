@@ -475,7 +475,6 @@ function normalizeCssString(cssText) {
 }
 function splitCssText(cssText, style) {
   const childNodes2 = Array.from(style.childNodes);
-  debugger;
   const splits = [];
   if (childNodes2.length > 1 && cssText && typeof cssText === "string") {
     const cssTextNorm = normalizeCssString(cssText);
@@ -4865,7 +4864,8 @@ function serializeNodeWithId(n2, options) {
       onStylesheetLoad,
       stylesheetLoadTimeout,
       keepIframeSrcFn,
-      cssCaptured: false
+      cssCaptured: false,
+      customGenId
     };
     if (serializedNode.type === NodeType$3.Element && serializedNode.tagName === "textarea" && serializedNode.attributes.value !== void 0) ;
     else {
@@ -4923,7 +4923,8 @@ function serializeNodeWithId(n2, options) {
             iframeLoadTimeout,
             onStylesheetLoad,
             stylesheetLoadTimeout,
-            keepIframeSrcFn
+            keepIframeSrcFn,
+            customGenId
           });
           if (serializedIframeNode) {
             onIframeLoad(
@@ -4964,7 +4965,8 @@ function serializeNodeWithId(n2, options) {
             iframeLoadTimeout,
             onStylesheetLoad,
             stylesheetLoadTimeout,
-            keepIframeSrcFn
+            keepIframeSrcFn,
+            customGenId
           });
           if (serializedLinkNode) {
             onStylesheetLoad(

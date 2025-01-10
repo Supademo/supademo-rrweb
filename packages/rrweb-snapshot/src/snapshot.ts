@@ -1108,6 +1108,7 @@ export function serializeNodeWithId(
       stylesheetLoadTimeout,
       keepIframeSrcFn,
       cssCaptured: false,
+      customGenId
     };
 
     if (
@@ -1183,6 +1184,7 @@ export function serializeNodeWithId(
             onStylesheetLoad,
             stylesheetLoadTimeout,
             keepIframeSrcFn,
+            customGenId
           });
 
           if (serializedIframeNode) {
@@ -1235,6 +1237,7 @@ export function serializeNodeWithId(
             onStylesheetLoad,
             stylesheetLoadTimeout,
             keepIframeSrcFn,
+            customGenId
           });
 
           if (serializedLinkNode) {
