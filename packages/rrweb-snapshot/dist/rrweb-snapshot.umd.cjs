@@ -4280,6 +4280,15 @@ function _isBlockedElement(element, blockClass, blockSelector) {
   }
   return false;
 }
+function _isIgnoredElement(element, ignoreSelector) {
+  try {
+    if (ignoreSelector) {
+      return element.matches(ignoreSelector);
+    }
+  } catch (e) {
+  }
+  return false;
+}
 function classMatchesRegex(node2, regex, checkAncestors) {
   if (!node2) return false;
   if (node2.nodeType !== node2.ELEMENT_NODE) {
@@ -4388,6 +4397,7 @@ function serializeNode(n, options) {
     mirror,
     blockClass,
     blockSelector,
+    ignoreSelector,
     needsMask,
     inlineStylesheet,
     maskInputOptions = {},
@@ -4429,6 +4439,7 @@ function serializeNode(n, options) {
         doc,
         blockClass,
         blockSelector,
+        ignoreSelector,
         inlineStylesheet,
         maskInputOptions,
         maskInputFn,
@@ -4500,6 +4511,15 @@ function extractHoverPseudoClass(cssText) {
   const result2 = ast.css;
   return result2;
 }
+function getFormattedTime() {
+  const now = /* @__PURE__ */ new Date();
+  return now.toLocaleTimeString("en-US", {
+    hour12: false,
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit"
+  });
+}
 function serializeElementNode(n, options) {
   const {
     doc,
@@ -4516,6 +4536,10 @@ function serializeElementNode(n, options) {
     rootId
   } = options;
   const needBlock = _isBlockedElement(n, blockClass, blockSelector);
+  const shouldIgnore = _isIgnoredElement(n, options.ignoreSelector);
+  if (shouldIgnore) {
+    return false;
+  }
   const tagName = getValidTagName(n);
   let attributes = {};
   const len = n.attributes.length;
@@ -4555,7 +4579,9 @@ function serializeElementNode(n, options) {
       if (n.childNodes.length > 1) {
         cssText = (() => {
           try {
+            console.log("BEFORE", n, getFormattedTime());
             cssText = markCssSplits(cssText, n) || "";
+            console.log("AFTER", n, getFormattedTime());
           } catch (error) {
             if (true) {
               console.warn("Failed to mark CSS splits:", error);
@@ -4749,6 +4775,7 @@ function serializeNodeWithId(n, options) {
     mirror,
     blockClass,
     blockSelector,
+    ignoreSelector,
     maskTextClass,
     maskTextSelector,
     skipChild = false,
@@ -4786,6 +4813,7 @@ function serializeNodeWithId(n, options) {
     mirror,
     blockClass,
     blockSelector,
+    ignoreSelector,
     needsMask,
     inlineStylesheet,
     maskInputOptions,
@@ -4799,7 +4827,9 @@ function serializeNodeWithId(n, options) {
     cssCaptured
   });
   if (!_serializedNode) {
-    console.warn(n, "not serialized");
+    if (n instanceof HTMLElement && !_isIgnoredElement(n, ignoreSelector)) {
+      console.warn(n, "not serialized");
+    }
     return null;
   }
   let id;
@@ -4841,6 +4871,7 @@ function serializeNodeWithId(n, options) {
       mirror,
       blockClass,
       blockSelector,
+      ignoreSelector,
       needsMask,
       maskTextClass,
       maskTextSelector,
@@ -4901,6 +4932,7 @@ function serializeNodeWithId(n, options) {
             mirror,
             blockClass,
             blockSelector,
+            ignoreSelector,
             needsMask,
             maskTextClass,
             maskTextSelector,
@@ -4943,6 +4975,7 @@ function serializeNodeWithId(n, options) {
             mirror,
             blockClass,
             blockSelector,
+            ignoreSelector,
             needsMask,
             maskTextClass,
             maskTextSelector,
@@ -4982,6 +5015,7 @@ function snapshot(n, options) {
     mirror = new Mirror(),
     blockClass = "rr-block",
     blockSelector = null,
+    ignoreSelector = null,
     maskTextClass = "rr-mask",
     maskTextSelector = null,
     inlineStylesheet = true,
@@ -5042,6 +5076,7 @@ function snapshot(n, options) {
     mirror,
     blockClass,
     blockSelector,
+    ignoreSelector,
     maskTextClass,
     maskTextSelector,
     skipChild: false,

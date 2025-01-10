@@ -4235,6 +4235,15 @@ function _isBlockedElement(element, blockClass, blockSelector) {
   }
   return false;
 }
+function _isIgnoredElement(element, ignoreSelector) {
+  try {
+    if (ignoreSelector) {
+      return element.matches(ignoreSelector);
+    }
+  } catch (e2) {
+  }
+  return false;
+}
 function classMatchesRegex(node2, regex, checkAncestors) {
   if (!node2) return false;
   if (node2.nodeType !== node2.ELEMENT_NODE) {
@@ -4343,6 +4352,7 @@ function serializeNode(n2, options) {
     mirror: mirror2,
     blockClass,
     blockSelector,
+    ignoreSelector,
     needsMask,
     inlineStylesheet,
     maskInputOptions = {},
@@ -4384,6 +4394,7 @@ function serializeNode(n2, options) {
         doc,
         blockClass,
         blockSelector,
+        ignoreSelector,
         inlineStylesheet,
         maskInputOptions,
         maskInputFn,
@@ -4455,6 +4466,15 @@ function extractHoverPseudoClass(cssText) {
   const result2 = ast.css;
   return result2;
 }
+function getFormattedTime() {
+  const now = /* @__PURE__ */ new Date();
+  return now.toLocaleTimeString("en-US", {
+    hour12: false,
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit"
+  });
+}
 function serializeElementNode(n2, options) {
   const {
     doc,
@@ -4471,6 +4491,10 @@ function serializeElementNode(n2, options) {
     rootId
   } = options;
   const needBlock = _isBlockedElement(n2, blockClass, blockSelector);
+  const shouldIgnore = _isIgnoredElement(n2, options.ignoreSelector);
+  if (shouldIgnore) {
+    return false;
+  }
   const tagName = getValidTagName$1(n2);
   let attributes = {};
   const len = n2.attributes.length;
@@ -4510,7 +4534,9 @@ function serializeElementNode(n2, options) {
       if (n2.childNodes.length > 1) {
         cssText = (() => {
           try {
+            console.log("BEFORE", n2, getFormattedTime());
             cssText = markCssSplits(cssText, n2) || "";
+            console.log("AFTER", n2, getFormattedTime());
           } catch (error) {
             if (process.env.NODE_ENV !== "production") {
               console.warn("Failed to mark CSS splits:", error);
@@ -4704,6 +4730,7 @@ function serializeNodeWithId(n2, options) {
     mirror: mirror2,
     blockClass,
     blockSelector,
+    ignoreSelector,
     maskTextClass,
     maskTextSelector,
     skipChild = false,
@@ -4741,6 +4768,7 @@ function serializeNodeWithId(n2, options) {
     mirror: mirror2,
     blockClass,
     blockSelector,
+    ignoreSelector,
     needsMask,
     inlineStylesheet,
     maskInputOptions,
@@ -4754,7 +4782,9 @@ function serializeNodeWithId(n2, options) {
     cssCaptured
   });
   if (!_serializedNode) {
-    console.warn(n2, "not serialized");
+    if (n2 instanceof HTMLElement && !_isIgnoredElement(n2, ignoreSelector)) {
+      console.warn(n2, "not serialized");
+    }
     return null;
   }
   let id;
@@ -4796,6 +4826,7 @@ function serializeNodeWithId(n2, options) {
       mirror: mirror2,
       blockClass,
       blockSelector,
+      ignoreSelector,
       needsMask,
       maskTextClass,
       maskTextSelector,
@@ -4856,6 +4887,7 @@ function serializeNodeWithId(n2, options) {
             mirror: mirror2,
             blockClass,
             blockSelector,
+            ignoreSelector,
             needsMask,
             maskTextClass,
             maskTextSelector,
@@ -4898,6 +4930,7 @@ function serializeNodeWithId(n2, options) {
             mirror: mirror2,
             blockClass,
             blockSelector,
+            ignoreSelector,
             needsMask,
             maskTextClass,
             maskTextSelector,
@@ -4937,6 +4970,7 @@ function snapshot(n2, options) {
     mirror: mirror2 = new Mirror(),
     blockClass = "rr-block",
     blockSelector = null,
+    ignoreSelector = null,
     maskTextClass = "rr-mask",
     maskTextSelector = null,
     inlineStylesheet = true,
@@ -4997,6 +5031,7 @@ function snapshot(n2, options) {
     mirror: mirror2,
     blockClass,
     blockSelector,
+    ignoreSelector,
     maskTextClass,
     maskTextSelector,
     skipChild: false,
@@ -9262,6 +9297,7 @@ class MutationBuffer {
     __publicField(this, "mutationCb");
     __publicField(this, "blockClass");
     __publicField(this, "blockSelector");
+    __publicField(this, "ignoreSelector");
     __publicField(this, "maskTextClass");
     __publicField(this, "maskTextSelector");
     __publicField(this, "inlineStylesheet");
@@ -9325,6 +9361,7 @@ class MutationBuffer {
           mirror: this.mirror,
           blockClass: this.blockClass,
           blockSelector: this.blockSelector,
+          ignoreSelector: this.ignoreSelector,
           maskTextClass: this.maskTextClass,
           maskTextSelector: this.maskTextSelector,
           skipChild: true,

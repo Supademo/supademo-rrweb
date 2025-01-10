@@ -247,6 +247,21 @@ export function _isBlockedElement(
   return false;
 }
 
+export function _isIgnoredElement(
+  element: HTMLElement,
+  ignoreSelector: string | null,
+): boolean {
+  try {
+    if (ignoreSelector) {
+      return element.matches(ignoreSelector);
+    }
+  } catch (e) {
+    //
+  }
+
+  return false;
+}
+
 export function classMatchesRegex(
   node: Node | null,
   regex: RegExp,
@@ -397,6 +412,7 @@ function serializeNode(
     mirror: Mirror;
     blockClass: string | RegExp;
     blockSelector: string | null;
+    ignoreSelector: string | null;
     needsMask: boolean;
     inlineStylesheet: boolean;
     maskInputOptions: MaskInputOptions;
@@ -418,6 +434,7 @@ function serializeNode(
     mirror,
     blockClass,
     blockSelector,
+    ignoreSelector,
     needsMask,
     inlineStylesheet,
     maskInputOptions = {},
@@ -459,6 +476,7 @@ function serializeNode(
         doc,
         blockClass,
         blockSelector,
+        ignoreSelector,
         inlineStylesheet,
         maskInputOptions,
         maskInputFn,
@@ -551,13 +569,22 @@ function extractHoverPseudoClass(cssText: string): string {
   const result = ast.css;
   return result;
 }
-
+function getFormattedTime(): string {
+  const now = new Date();
+  return now.toLocaleTimeString('en-US', {
+    hour12: false,
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
+  });
+}
 function serializeElementNode(
   n: HTMLElement,
   options: {
     doc: Document;
     blockClass: string | RegExp;
     blockSelector: string | null;
+    ignoreSelector: string | null;
     inlineStylesheet: boolean;
     maskInputOptions: MaskInputOptions;
     maskInputFn: MaskInputFn | undefined;
@@ -587,6 +614,10 @@ function serializeElementNode(
     rootId,
   } = options;
   const needBlock = _isBlockedElement(n, blockClass, blockSelector);
+  const shouldIgnore = _isIgnoredElement(n, options.ignoreSelector);
+  if (shouldIgnore) {
+    return false;
+  }
   const tagName = getValidTagName(n);
   let attributes: attributes = {};
   const len = n.attributes.length;
@@ -630,7 +661,9 @@ function serializeElementNode(
         // Old -> cssText = markCssSplits(cssText, n as HTMLStyleElement);
         cssText = (() => {
           try {
+            console.log('BEFORE', n, getFormattedTime())
             cssText = markCssSplits(cssText, n as HTMLStyleElement) || '';
+            console.log('AFTER', n, getFormattedTime())
           } catch (error) {
             if (process.env.NODE_ENV !== 'production') {
               console.warn('Failed to mark CSS splits:', error);
@@ -932,6 +965,7 @@ export function serializeNodeWithId(
     mirror: Mirror;
     blockClass: string | RegExp;
     blockSelector: string | null;
+    ignoreSelector: string | null;
     maskTextClass: string | RegExp;
     maskTextSelector: string | null;
     skipChild: boolean;
@@ -967,6 +1001,7 @@ export function serializeNodeWithId(
     mirror,
     blockClass,
     blockSelector,
+    ignoreSelector,
     maskTextClass,
     maskTextSelector,
     skipChild = false,
@@ -1007,6 +1042,7 @@ export function serializeNodeWithId(
     mirror,
     blockClass,
     blockSelector,
+    ignoreSelector,
     needsMask,
     inlineStylesheet,
     maskInputOptions,
@@ -1021,7 +1057,9 @@ export function serializeNodeWithId(
   });
   if (!_serializedNode) {
     // TODO: dev only
-    console.warn(n, 'not serialized');
+    if (n instanceof HTMLElement && !_isIgnoredElement(n, ignoreSelector)) {
+      console.warn(n, 'not serialized');
+    }
     return null;
   }
 
@@ -1088,6 +1126,7 @@ export function serializeNodeWithId(
       mirror,
       blockClass,
       blockSelector,
+      ignoreSelector,
       needsMask,
       maskTextClass,
       maskTextSelector,
@@ -1165,6 +1204,7 @@ export function serializeNodeWithId(
             mirror,
             blockClass,
             blockSelector,
+            ignoreSelector,
             needsMask,
             maskTextClass,
             maskTextSelector,
@@ -1218,6 +1258,7 @@ export function serializeNodeWithId(
             mirror,
             blockClass,
             blockSelector,
+            ignoreSelector,
             needsMask,
             maskTextClass,
             maskTextSelector,
@@ -1261,6 +1302,7 @@ function snapshot(
     mirror?: Mirror;
     blockClass?: string | RegExp;
     blockSelector?: string | null;
+    ignoreSelector?: string | null
     maskTextClass?: string | RegExp;
     maskTextSelector?: string | null;
     inlineStylesheet?: boolean;
@@ -1291,6 +1333,7 @@ function snapshot(
     mirror = new Mirror(),
     blockClass = 'rr-block',
     blockSelector = null,
+    ignoreSelector = null,
     maskTextClass = 'rr-mask',
     maskTextSelector = null,
     inlineStylesheet = true,
@@ -1358,6 +1401,7 @@ function snapshot(
     mirror,
     blockClass,
     blockSelector,
+    ignoreSelector,
     maskTextClass,
     maskTextSelector,
     skipChild: false,

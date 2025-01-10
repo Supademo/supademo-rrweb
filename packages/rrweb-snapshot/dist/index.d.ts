@@ -147,6 +147,7 @@ export declare function serializeNodeWithId(n: Node, options: {
     mirror: Mirror;
     blockClass: string | RegExp;
     blockSelector: string | null;
+    ignoreSelector: string | null;
     maskTextClass: string | RegExp;
     maskTextSelector: string | null;
     skipChild: boolean;
@@ -189,6 +190,7 @@ export declare function snapshot(n: Document, options?: {
     mirror?: Mirror;
     blockClass?: string | RegExp;
     blockSelector?: string | null;
+    ignoreSelector?: string | null;
     maskTextClass?: string | RegExp;
     maskTextSelector?: string | null;
     inlineStylesheet?: boolean;
