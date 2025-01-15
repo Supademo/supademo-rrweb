@@ -4625,16 +4625,7 @@ function serializeElementNode(n2, options) {
         dataURLOptions.type,
         dataURLOptions.quality
       );
-      const blankCanvas = doc.createElement("canvas");
-      blankCanvas.width = n2.width;
-      blankCanvas.height = n2.height;
-      const blankCanvasDataURL = blankCanvas.toDataURL(
-        dataURLOptions.type,
-        dataURLOptions.quality
-      );
-      if (canvasDataURL !== blankCanvasDataURL) {
-        attributes.rr_dataURL = canvasDataURL;
-      }
+      attributes.rr_dataURL = canvasDataURL;
     }
   }
   if (tagName === "img" && inlineImages) {

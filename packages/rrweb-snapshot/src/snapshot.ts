@@ -734,20 +734,7 @@ function serializeElementNode(
         dataURLOptions.type,
         dataURLOptions.quality,
       );
-
-      // create blank canvas of same dimensions
-      const blankCanvas = doc.createElement('canvas');
-      blankCanvas.width = (n as HTMLCanvasElement).width;
-      blankCanvas.height = (n as HTMLCanvasElement).height;
-      const blankCanvasDataURL = blankCanvas.toDataURL(
-        dataURLOptions.type,
-        dataURLOptions.quality,
-      );
-
-      // no need to save dataURL if it's the same as blank canvas
-      if (canvasDataURL !== blankCanvasDataURL) {
-        attributes.rr_dataURL = canvasDataURL;
-      }
+      attributes.rr_dataURL = canvasDataURL;
     }
   }
   // save image offline
