@@ -4508,12 +4508,17 @@ function serializeTextNode(n2, options) {
   };
 }
 function extractHoverPseudoClass(cssText) {
-  const ast = postcss$1$1([
-    mediaSelectorPlugin,
-    pseudoClassPlugin
-  ]).process(cssText);
-  const result2 = ast.css;
-  return result2;
+  try {
+    const ast = postcss$1$1([
+      mediaSelectorPlugin,
+      pseudoClassPlugin
+    ]).process(cssText);
+    const result2 = ast.css;
+    return result2;
+  } catch (error) {
+    console.error("Error extracting hover pseudo class:", error);
+    return cssText;
+  }
 }
 function getFormattedTime() {
   const now = /* @__PURE__ */ new Date();
@@ -4570,8 +4575,6 @@ function serializeElementNode(n2, options) {
       }
     }
     if (cssText) {
-      delete attributes.rel;
-      delete attributes.href;
       attributes._cssText = cssText;
     }
   }

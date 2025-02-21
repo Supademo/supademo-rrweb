@@ -33,7 +33,10 @@ import {
 } from './utils';
 import dom from '@supademo/rrweb-utils';
 import postcss from 'postcss';
-import { mediaSelectorPlugin, pseudoClassPlugin } from './css';
+import {
+  mediaSelectorPlugin,
+  pseudoClassPlugin
+} from './css';
 
 export type IdGenerator = () => number;
 
@@ -562,12 +565,18 @@ function serializeTextNode(
 }
 
 function extractHoverPseudoClass(cssText: string): string {
-  const ast: { css: string } = postcss([
-    mediaSelectorPlugin,
-    pseudoClassPlugin,
-  ]).process(cssText);
-  const result = ast.css;
-  return result;
+  try {
+    const ast: { css: string } = postcss([
+      mediaSelectorPlugin,
+      pseudoClassPlugin,
+    ]).process(cssText);
+    const result = ast.css;
+    return result;
+  } catch (error) {
+    console.error('Error extracting hover pseudo class:', error);
+    return cssText;
+    
+  }
 }
 function getFormattedTime(): string {
   const now = new Date();
@@ -646,8 +655,9 @@ function serializeElementNode(
       }
     }
     if (cssText) {
-      delete attributes.rel;
-      delete attributes.href;
+      // ? Supademo: These could be useful for debugging
+      // delete attributes.rel;
+      // delete attributes.href;
       attributes._cssText = cssText;
     }
   }
