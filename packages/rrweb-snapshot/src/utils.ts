@@ -459,43 +459,89 @@ export function normalizeCssString(cssText: string): string {
  * performance is not considered as this is anticipated to be very much an edge case
  * (javascript is needed to add extra text nodes to a <style>)
  */
+// export function splitCssText(
+//   cssText: string,
+//   style: HTMLStyleElement,
+// ): string[] {
+//   const childNodes = Array.from(style.childNodes);
+//   const splits: string[] = [];
+//   if (childNodes.length > 1 && cssText && typeof cssText === 'string') {
+//     const cssTextNorm = normalizeCssString(cssText);
+//     for (let i = 1; i < childNodes.length; i++) {
+//       if (
+//         childNodes[i].textContent &&
+//         typeof childNodes[i].textContent === 'string'
+//       ) {
+//         const textContentNorm = normalizeCssString(childNodes[i].textContent!);
+//         for (let j = 3; j < textContentNorm.length; j++) {
+//           // find a  substring that appears only once
+//           const bit = textContentNorm.substring(0, j);
+//           if (cssTextNorm.split(bit).length === 2) {
+//             const splitNorm = cssTextNorm.indexOf(bit);
+//             // find the split point in the original text
+//             for (let k = splitNorm; k < cssText.length; k++) {
+//               if (
+//                 normalizeCssString(cssText.substring(0, k)).length === splitNorm
+//               ) {
+//                 splits.push(cssText.substring(0, k));
+//                 cssText = cssText.substring(k);
+//                 break;
+//               }
+//             }
+//             break;
+//           }
+//         }
+//       }
+//     }
+//   }
+//   splits.push(cssText); // either the full thing if no splits were found, or the last split
+//   return splits;
+// }
+// ? Supademo: simpler, less accurate splitCssText function
 export function splitCssText(
   cssText: string,
   style: HTMLStyleElement,
 ): string[] {
-  const childNodes = Array.from(style.childNodes);
-  const splits: string[] = [];
-  if (childNodes.length > 1 && cssText && typeof cssText === 'string') {
-    const cssTextNorm = normalizeCssString(cssText);
-    for (let i = 1; i < childNodes.length; i++) {
-      if (
-        childNodes[i].textContent &&
-        typeof childNodes[i].textContent === 'string'
-      ) {
-        const textContentNorm = normalizeCssString(childNodes[i].textContent!);
-        for (let j = 3; j < textContentNorm.length; j++) {
-          // find a  substring that appears only once
-          const bit = textContentNorm.substring(0, j);
-          if (cssTextNorm.split(bit).length === 2) {
-            const splitNorm = cssTextNorm.indexOf(bit);
-            // find the split point in the original text
-            for (let k = splitNorm; k < cssText.length; k++) {
-              if (
-                normalizeCssString(cssText.substring(0, k)).length === splitNorm
-              ) {
-                splits.push(cssText.substring(0, k));
-                cssText = cssText.substring(k);
-                break;
-              }
-            }
-            break;
-          }
+  try {
+    // More robust null/undefined handling
+    if (!style) {
+      console.warn('No style element provided to splitCssText');
+      return [cssText || ''];
+    }
+
+    const childNodes = Array.from(style.childNodes || []);
+
+    // For most common case, just return the full text
+    if (childNodes.length <= 1 || !cssText) {
+      return [cssText || ''];
+    }
+
+    // Simple length-based splitting for multi-node case
+    const splits: string[] = [];
+
+    for (let i = 0; i < childNodes.length; i++) {
+      const node = childNodes[i];
+      // More thorough node type checking
+      if (node && node.nodeType === Node.TEXT_NODE) {
+        const nodeContent = node.textContent || '';
+        if (nodeContent.length > 0) {
+          splits.push(nodeContent);
         }
       }
     }
+
+    // Ensure we return at least one item when we have content
+    if (splits.length === 0 && cssText) {
+      return [cssText];
+    }
+
+    return splits;
+  } catch (error) {
+    // More detailed error logging
+    console.warn('Error splitting CSS text:', error,
+      { cssTextLength: cssText?.length, styleChildNodes: style?.childNodes?.length });
+    return [cssText || ''];
   }
-  splits.push(cssText); // either the full thing if no splits were found, or the last split
-  return splits;
 }
 
 export function markCssSplits(

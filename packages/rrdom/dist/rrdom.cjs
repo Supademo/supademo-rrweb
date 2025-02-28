@@ -549,7 +549,7 @@ function sourceOffset(inputCSS, position) {
   }
   return offset;
 }
-let Node$4 = class Node {
+let Node$5 = class Node2 {
   constructor(defaults = {}) {
     this.raws = {};
     this[isClean$2] = false;
@@ -854,10 +854,10 @@ let Node$4 = class Node {
     return this;
   }
 };
-var node = Node$4;
-Node$4.default = Node$4;
-let Node$3 = node;
-let Comment$4 = class Comment extends Node$3 {
+var node = Node$5;
+Node$5.default = Node$5;
+let Node$4 = node;
+let Comment$4 = class Comment extends Node$4 {
   constructor(defaults) {
     super(defaults);
     this.type = "comment";
@@ -865,8 +865,8 @@ let Comment$4 = class Comment extends Node$3 {
 };
 var comment = Comment$4;
 Comment$4.default = Comment$4;
-let Node$2 = node;
-let Declaration$4 = class Declaration extends Node$2 {
+let Node$3 = node;
+let Declaration$4 = class Declaration extends Node$3 {
   constructor(defaults) {
     if (defaults && typeof defaults.value !== "undefined" && typeof defaults.value !== "string") {
       defaults = { ...defaults, value: String(defaults.value) };
@@ -882,7 +882,7 @@ var declaration = Declaration$4;
 Declaration$4.default = Declaration$4;
 let Comment$3 = comment;
 let Declaration$3 = declaration;
-let Node$1 = node;
+let Node$2 = node;
 let { isClean: isClean$1, my: my$1 } = symbols;
 let AtRule$4, parse$4, Root$6, Rule$4;
 function cleanSource(nodes) {
@@ -900,7 +900,7 @@ function markTreeDirty(node2) {
     }
   }
 }
-let Container$7 = class Container extends Node$1 {
+let Container$7 = class Container extends Node$2 {
   append(...children) {
     for (let child of children) {
       let nodes = this.normalize(child, this.last);
@@ -3569,7 +3569,7 @@ let fromJSON = fromJSON_1;
 let Input2 = input;
 let LazyResult2 = lazyResult;
 let list = list_1;
-let Node2 = node;
+let Node$1 = node;
 let parse = parse_1;
 let Processor2 = processor;
 let Result2 = result;
@@ -3636,7 +3636,7 @@ postcss.Result = Result2;
 postcss.Input = Input2;
 postcss.Rule = Rule2;
 postcss.Root = Root2;
-postcss.Node = Node2;
+postcss.Node = Node$1;
 LazyResult2.registerPostcss(postcss);
 var postcss_1 = postcss;
 postcss.default = postcss;

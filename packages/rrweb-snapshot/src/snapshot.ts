@@ -667,7 +667,7 @@ function serializeElementNode(
     );
     if (cssText) {
       if (n.childNodes.length > 1) {
-        // ? Supademo: Prevent markCssSplits from throwing on weird style tags
+        // ? Supademo: Prevent markCssSplits from throwing error on weird style tags
         // Old -> cssText = markCssSplits(cssText, n as HTMLStyleElement);
         cssText = (() => {
           try {

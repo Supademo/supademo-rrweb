@@ -435,32 +435,38 @@ function normalizeCssString(cssText) {
   return cssText.replace(/(\/\*[^*]*\*\/)|[\s;]/g, "");
 }
 function splitCssText(cssText, style) {
-  const childNodes2 = Array.from(style.childNodes);
-  const splits = [];
-  if (childNodes2.length > 1 && cssText && typeof cssText === "string") {
-    const cssTextNorm = normalizeCssString(cssText);
-    for (let i = 1; i < childNodes2.length; i++) {
-      if (childNodes2[i].textContent && typeof childNodes2[i].textContent === "string") {
-        const textContentNorm = normalizeCssString(childNodes2[i].textContent);
-        for (let j = 3; j < textContentNorm.length; j++) {
-          const bit = textContentNorm.substring(0, j);
-          if (cssTextNorm.split(bit).length === 2) {
-            const splitNorm = cssTextNorm.indexOf(bit);
-            for (let k = splitNorm; k < cssText.length; k++) {
-              if (normalizeCssString(cssText.substring(0, k)).length === splitNorm) {
-                splits.push(cssText.substring(0, k));
-                cssText = cssText.substring(k);
-                break;
-              }
-            }
-            break;
-          }
+  var _a;
+  try {
+    if (!style) {
+      console.warn("No style element provided to splitCssText");
+      return [cssText || ""];
+    }
+    const childNodes2 = Array.from(style.childNodes || []);
+    if (childNodes2.length <= 1 || !cssText) {
+      return [cssText || ""];
+    }
+    const splits = [];
+    for (let i = 0; i < childNodes2.length; i++) {
+      const node2 = childNodes2[i];
+      if (node2 && node2.nodeType === Node.TEXT_NODE) {
+        const nodeContent = node2.textContent || "";
+        if (nodeContent.length > 0) {
+          splits.push(nodeContent);
         }
       }
     }
+    if (splits.length === 0 && cssText) {
+      return [cssText];
+    }
+    return splits;
+  } catch (error) {
+    console.warn(
+      "Error splitting CSS text:",
+      error,
+      { cssTextLength: cssText == null ? void 0 : cssText.length, styleChildNodes: (_a = style == null ? void 0 : style.childNodes) == null ? void 0 : _a.length }
+    );
+    return [cssText || ""];
   }
-  splits.push(cssText);
-  return splits;
 }
 function markCssSplits(cssText, style) {
   return splitCssText(cssText, style).join("/* rr_split */");
@@ -950,7 +956,7 @@ function sourceOffset(inputCSS, position) {
   }
   return offset;
 }
-let Node$4 = class Node {
+let Node$5 = class Node2 {
   constructor(defaults = {}) {
     this.raws = {};
     this[isClean$2] = false;
@@ -1255,10 +1261,10 @@ let Node$4 = class Node {
     return this;
   }
 };
-var node = Node$4;
-Node$4.default = Node$4;
-let Node$3 = node;
-let Comment$4 = class Comment extends Node$3 {
+var node = Node$5;
+Node$5.default = Node$5;
+let Node$4 = node;
+let Comment$4 = class Comment extends Node$4 {
   constructor(defaults) {
     super(defaults);
     this.type = "comment";
@@ -1266,8 +1272,8 @@ let Comment$4 = class Comment extends Node$3 {
 };
 var comment = Comment$4;
 Comment$4.default = Comment$4;
-let Node$2 = node;
-let Declaration$4 = class Declaration extends Node$2 {
+let Node$3 = node;
+let Declaration$4 = class Declaration extends Node$3 {
   constructor(defaults) {
     if (defaults && typeof defaults.value !== "undefined" && typeof defaults.value !== "string") {
       defaults = { ...defaults, value: String(defaults.value) };
@@ -1283,7 +1289,7 @@ var declaration = Declaration$4;
 Declaration$4.default = Declaration$4;
 let Comment$3 = comment;
 let Declaration$3 = declaration;
-let Node$1 = node;
+let Node$2 = node;
 let { isClean: isClean$1, my: my$1 } = symbols;
 let AtRule$4, parse$4, Root$6, Rule$4;
 function cleanSource(nodes) {
@@ -1301,7 +1307,7 @@ function markTreeDirty(node2) {
     }
   }
 }
-let Container$7 = class Container extends Node$1 {
+let Container$7 = class Container extends Node$2 {
   append(...children) {
     for (let child of children) {
       let nodes = this.normalize(child, this.last);
@@ -3970,7 +3976,7 @@ let fromJSON = fromJSON_1;
 let Input2 = input;
 let LazyResult2 = lazyResult;
 let list = list_1;
-let Node2 = node;
+let Node$1 = node;
 let parse = parse_1;
 let Processor2 = processor;
 let Result2 = result;
@@ -4037,7 +4043,7 @@ postcss.Result = Result2;
 postcss.Input = Input2;
 postcss.Rule = Rule2;
 postcss.Root = Root2;
-postcss.Node = Node2;
+postcss.Node = Node$1;
 LazyResult2.registerPostcss(postcss);
 var postcss_1 = postcss;
 postcss.default = postcss;

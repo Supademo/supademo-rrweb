@@ -703,7 +703,7 @@ function sourceOffset$1(inputCSS, position) {
   }
   return offset;
 }
-let Node$4$1 = class Node2 {
+let Node$5$1 = class Node2 {
   constructor(defaults = {}) {
     this.raws = {};
     this[isClean$2$1] = false;
@@ -1008,10 +1008,10 @@ let Node$4$1 = class Node2 {
     return this;
   }
 };
-var node$1 = Node$4$1;
-Node$4$1.default = Node$4$1;
-let Node$3$1 = node$1;
-let Comment$4$1 = class Comment extends Node$3$1 {
+var node$1 = Node$5$1;
+Node$5$1.default = Node$5$1;
+let Node$4$1 = node$1;
+let Comment$4$1 = class Comment extends Node$4$1 {
   constructor(defaults) {
     super(defaults);
     this.type = "comment";
@@ -1019,8 +1019,8 @@ let Comment$4$1 = class Comment extends Node$3$1 {
 };
 var comment$1 = Comment$4$1;
 Comment$4$1.default = Comment$4$1;
-let Node$2$1 = node$1;
-let Declaration$4$1 = class Declaration extends Node$2$1 {
+let Node$3$1 = node$1;
+let Declaration$4$1 = class Declaration extends Node$3$1 {
   constructor(defaults) {
     if (defaults && typeof defaults.value !== "undefined" && typeof defaults.value !== "string") {
       defaults = { ...defaults, value: String(defaults.value) };
@@ -1036,7 +1036,7 @@ var declaration$1 = Declaration$4$1;
 Declaration$4$1.default = Declaration$4$1;
 let Comment$3$1 = comment$1;
 let Declaration$3$1 = declaration$1;
-let Node$1$1 = node$1;
+let Node$2$1 = node$1;
 let { isClean: isClean$1$1, my: my$1$1 } = symbols$1;
 let AtRule$4$1, parse$4$1, Root$6$1, Rule$4$1;
 function cleanSource$1(nodes) {
@@ -1054,7 +1054,7 @@ function markTreeDirty$1(node2) {
     }
   }
 }
-let Container$7$1 = class Container extends Node$1$1 {
+let Container$7$1 = class Container extends Node$2$1 {
   append(...children) {
     for (let child of children) {
       let nodes = this.normalize(child, this.last);
@@ -3723,7 +3723,7 @@ let fromJSON$2 = fromJSON_1$1;
 let Input2$1 = input$1;
 let LazyResult2$1 = lazyResult$1;
 let list$3 = list_1$1;
-let Node2$1 = node$1;
+let Node$1$1 = node$1;
 let parse$5 = parse_1$1;
 let Processor2$1 = processor$1;
 let Result2$1 = result$1;
@@ -3790,7 +3790,7 @@ postcss$3.Result = Result2$1;
 postcss$3.Input = Input2$1;
 postcss$3.Rule = Rule2$1;
 postcss$3.Root = Root2$1;
-postcss$3.Node = Node2$1;
+postcss$3.Node = Node$1$1;
 LazyResult2$1.registerPostcss(postcss$3);
 var postcss_1$1 = postcss$3;
 postcss$3.default = postcss$3;
@@ -4323,7 +4323,7 @@ function sourceOffset(inputCSS, position) {
   }
   return offset;
 }
-let Node$4 = class Node3 {
+let Node$5 = class Node22 {
   constructor(defaults = {}) {
     this.raws = {};
     this[isClean$2] = false;
@@ -4628,10 +4628,10 @@ let Node$4 = class Node3 {
     return this;
   }
 };
-var node = Node$4;
-Node$4.default = Node$4;
-let Node$3 = node;
-let Comment$4 = class Comment2 extends Node$3 {
+var node = Node$5;
+Node$5.default = Node$5;
+let Node$4 = node;
+let Comment$4 = class Comment2 extends Node$4 {
   constructor(defaults) {
     super(defaults);
     this.type = "comment";
@@ -4639,8 +4639,8 @@ let Comment$4 = class Comment2 extends Node$3 {
 };
 var comment = Comment$4;
 Comment$4.default = Comment$4;
-let Node$2 = node;
-let Declaration$4 = class Declaration2 extends Node$2 {
+let Node$3 = node;
+let Declaration$4 = class Declaration2 extends Node$3 {
   constructor(defaults) {
     if (defaults && typeof defaults.value !== "undefined" && typeof defaults.value !== "string") {
       defaults = { ...defaults, value: String(defaults.value) };
@@ -4656,7 +4656,7 @@ var declaration = Declaration$4;
 Declaration$4.default = Declaration$4;
 let Comment$3 = comment;
 let Declaration$3 = declaration;
-let Node$1 = node;
+let Node$2 = node;
 let { isClean: isClean$1, my: my$1 } = symbols;
 let AtRule$4, parse$4, Root$6, Rule$4;
 function cleanSource(nodes) {
@@ -4674,7 +4674,7 @@ function markTreeDirty(node2) {
     }
   }
 }
-let Container$7 = class Container2 extends Node$1 {
+let Container$7 = class Container2 extends Node$2 {
   append(...children) {
     for (let child of children) {
       let nodes = this.normalize(child, this.last);
@@ -7343,7 +7343,7 @@ let fromJSON = fromJSON_1;
 let Input22 = input;
 let LazyResult22 = lazyResult;
 let list = list_1;
-let Node22 = node;
+let Node$1 = node;
 let parse = parse_1;
 let Processor22 = processor;
 let Result22 = result;
@@ -7410,7 +7410,7 @@ postcss.Result = Result22;
 postcss.Input = Input22;
 postcss.Rule = Rule22;
 postcss.Root = Root22;
-postcss.Node = Node22;
+postcss.Node = Node$1;
 LazyResult22.registerPostcss(postcss);
 var postcss_1 = postcss;
 postcss.default = postcss;
