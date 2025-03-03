@@ -4108,9 +4108,9 @@ const pseudoClassPlugin = {
     };
   }
 };
-let _id = 1;
 const tagNameRegex = new RegExp("[^a-z0-9-_:]");
 const IGNORED_NODE = -2;
+let _id = 1;
 function genId() {
   return _id++;
 }
@@ -4485,15 +4485,6 @@ function extractHoverPseudoClass(cssText) {
     return cssText;
   }
 }
-function getFormattedTime() {
-  const now = /* @__PURE__ */ new Date();
-  return now.toLocaleTimeString("en-US", {
-    hour12: false,
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit"
-  });
-}
 function serializeElementNode(n, options) {
   const {
     doc,
@@ -4551,9 +4542,8 @@ function serializeElementNode(n, options) {
       if (n.childNodes.length > 1) {
         cssText = (() => {
           try {
-            console.log("BEFORE", n, getFormattedTime());
-            cssText = markCssSplits(cssText, n) || "";
-            console.log("AFTER", n, getFormattedTime());
+            const result2 = markCssSplits(cssText, n) || "";
+            return result2;
           } catch (error) {
             if (process.env.NODE_ENV !== "production") {
               console.warn("Failed to mark CSS splits:", error);
@@ -5072,7 +5062,6 @@ function visitSnapshot(node2, onVisit) {
   walk(node2);
 }
 function cleanupSnapshot() {
-  _id = 1;
 }
 const tagMap = {
   script: "noscript",

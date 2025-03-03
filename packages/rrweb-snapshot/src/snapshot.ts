@@ -40,14 +40,18 @@ import {
 
 export type IdGenerator = () => number;
 
-let _id = 1;
 const tagNameRegex = new RegExp('[^a-z0-9-_:]');
 
 export const IGNORED_NODE = -2;
 
+let _id = 1;
 export function genId(): number {
   return _id++;
 }
+// ? Suapdemo: Use random numbers instead of incrementing
+// export function genId(): number {
+//   return Math.floor(Math.random() * Number.MAX_SAFE_INTEGER);
+// }
 
 function getValidTagName(element: HTMLElement): Lowercase<string> {
   if (element instanceof HTMLFormElement) {
@@ -578,15 +582,15 @@ function extractHoverPseudoClass(cssText: string): string {
     
   }
 }
-function getFormattedTime(): string {
-  const now = new Date();
-  return now.toLocaleTimeString('en-US', {
-    hour12: false,
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit'
-  });
-}
+// function getFormattedTime(): string {
+//   const now = new Date();
+//   return now.toLocaleTimeString('en-US', {
+//     hour12: false,
+//     hour: '2-digit',
+//     minute: '2-digit',
+//     second: '2-digit'
+//   });
+// }
 function serializeElementNode(
   n: HTMLElement,
   options: {
@@ -671,9 +675,10 @@ function serializeElementNode(
         // Old -> cssText = markCssSplits(cssText, n as HTMLStyleElement);
         cssText = (() => {
           try {
-            console.log('BEFORE', n, getFormattedTime())
-            cssText = markCssSplits(cssText, n as HTMLStyleElement) || '';
-            console.log('AFTER', n, getFormattedTime())
+            // console.log('BEFORE', n, getFormattedTime())
+            const result = markCssSplits(cssText, n as HTMLStyleElement) || '';
+            // console.log('AFTER', n, getFormattedTime())
+            return result;
           } catch (error) {
             if (process.env.NODE_ENV !== 'production') {
               console.warn('Failed to mark CSS splits:', error);
@@ -1441,7 +1446,7 @@ export function visitSnapshot(
 
 export function cleanupSnapshot() {
   // allow a new recording to start numbering nodes from scratch
-  _id = 1;
+  // _id = 1;
 }
 
 export default snapshot;

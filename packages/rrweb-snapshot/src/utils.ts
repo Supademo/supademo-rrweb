@@ -534,7 +534,6 @@ export function splitCssText(
     if (splits.length === 0 && cssText) {
       return [cssText];
     }
-
     return splits;
   } catch (error) {
     // More detailed error logging

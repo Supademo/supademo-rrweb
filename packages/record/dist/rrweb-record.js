@@ -4095,9 +4095,9 @@ const pseudoClassPlugin = {
     };
   }
 };
-let _id = 1;
 const tagNameRegex = new RegExp("[^a-z0-9-_:]");
 const IGNORED_NODE = -2;
+let _id = 1;
 function genId() {
   return _id++;
 }
@@ -4472,15 +4472,6 @@ function extractHoverPseudoClass(cssText) {
     return cssText;
   }
 }
-function getFormattedTime() {
-  const now = /* @__PURE__ */ new Date();
-  return now.toLocaleTimeString("en-US", {
-    hour12: false,
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit"
-  });
-}
 function serializeElementNode(n2, options) {
   const {
     doc,
@@ -4538,9 +4529,8 @@ function serializeElementNode(n2, options) {
       if (n2.childNodes.length > 1) {
         cssText = (() => {
           try {
-            console.log("BEFORE", n2, getFormattedTime());
-            cssText = markCssSplits(cssText, n2) || "";
-            console.log("AFTER", n2, getFormattedTime());
+            const result2 = markCssSplits(cssText, n2) || "";
+            return result2;
           } catch (error) {
             if (process.env.NODE_ENV !== "production") {
               console.warn("Failed to mark CSS splits:", error);
