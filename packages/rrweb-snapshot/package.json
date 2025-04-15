@@ -20,7 +20,7 @@
   "type": "module",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/rrweb-io/rrweb.git"
+    "url": "git+https://github.com/Supademo/supademo-rrweb"
   },
   "keywords": [
     "rrweb",
