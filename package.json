@@ -3,9 +3,12 @@
   "description": "record and replay the web",
   "repository": {
     "type": "git",
-    "url": "git+ssh://git@github.com/rrweb-io/rrweb.git"
+    "url": "git+ssh://git@github.com:Supademo/supademo-rrweb.git"
   },
-  "version": "3.0.4",
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "version": "4.0.0",
   "keywords": [
     "rrweb"
   ],
