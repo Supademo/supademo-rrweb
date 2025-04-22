@@ -1,6 +1,6 @@
 {
   "name": "@supademo/rrweb-snapshot",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "rrweb's component to take a snapshot of DOM, aka DOM serializer",
   "scripts": {
     "prepare": "npm run prepack",
@@ -20,7 +20,10 @@
   "type": "module",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Supademo/supademo-rrweb"
+    "url": "git+ssh://git@github.com:Supademo/supademo-rrweb.git"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
   },
   "keywords": [
     "rrweb",
