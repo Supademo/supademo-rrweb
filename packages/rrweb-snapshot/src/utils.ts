@@ -387,26 +387,27 @@ export function extractFileExtension(
   return match?.[1] ?? null;
 }
 
-function extractOrigin(url: string): string {
-  let origin = '';
-  if (url.indexOf('//') > -1) {
-    origin = url.split('/').slice(0, 3).join('/');
-  } else {
-    origin = url.split('/')[0];
-  }
-  origin = origin.split('?')[0];
-  return origin;
-}
+// function extractOrigin(url: string): string {
+//   let origin = '';
+//   if (url.indexOf('//') > -1) {
+//     origin = url.split('/').slice(0, 3).join('/');
+//   } else {
+//     origin = url.split('/')[0];
+//   }
+//   origin = origin.split('?')[0];
+//   return origin;
+// }
 
 const URL_IN_CSS_REF = /url\((?:(')([^']*)'|(")(.*?)"|([^)]*))\)/gm;
-const URL_PROTOCOL_MATCH = /^(?:[a-z+]+:)?\/\//i;
-const URL_WWW_MATCH = /^www\..*/i;
+// const URL_PROTOCOL_MATCH = /^(?:[a-z+]+:)?\/\//i;
+// const URL_WWW_MATCH = /^www\..*/i;
 const DATA_URI = /^(data:)([^,]*),(.*)/i;
+// ? Supademo: Fixed version
 export function absolutifyURLs(cssText: string | null, href: string): string {
   return (cssText || '').replace(
     URL_IN_CSS_REF,
     (
-      origin: string,
+      originMatch: string, // The entire matched 'url(...)' string
       quote1: string,
       path1: string,
       quote2: string,
@@ -415,36 +416,73 @@ export function absolutifyURLs(cssText: string | null, href: string): string {
     ) => {
       const filePath = path1 || path2 || path3;
       const maybeQuote = quote1 || quote2 || '';
+
       if (!filePath) {
-        return origin;
+        return originMatch; // If path is empty, return the original 'url(...)'
       }
-      if (URL_PROTOCOL_MATCH.test(filePath) || URL_WWW_MATCH.test(filePath)) {
-        return `url(${maybeQuote}${filePath}${maybeQuote})`;
-      }
+
+      // Data URIs are self-contained and don't need transformation.
       if (DATA_URI.test(filePath)) {
         return `url(${maybeQuote}${filePath}${maybeQuote})`;
       }
-      if (filePath[0] === '/') {
-        return `url(${maybeQuote}${
-          extractOrigin(href) + filePath
-        }${maybeQuote})`;
+
+      // Use the URL constructor to resolve the filePath against the base href.
+      // This handles absolute URLs, protocol-relative URLs, root-relative paths, and relative paths correctly.
+      try {
+        const absoluteUrl = new URL(filePath, href).href;
+        return `url(${maybeQuote}${absoluteUrl}${maybeQuote})`;
+      } catch (e) {
+        // If URL construction fails (e.g., href is not a valid base, or filePath is malformed),
+        // log a warning and return the original match to avoid breaking the CSS.
+        // console.warn(`Failed to absolutify URL: '${filePath}' with base: '${href}'. Error: ${e instanceof Error ? e.message : String(e)}`);
+        return originMatch;
       }
-      const stack = href.split('/');
-      const parts = filePath.split('/');
-      stack.pop();
-      for (const part of parts) {
-        if (part === '.') {
-          continue;
-        } else if (part === '..') {
-          stack.pop();
-        } else {
-          stack.push(part);
-        }
-      }
-      return `url(${maybeQuote}${stack.join('/')}${maybeQuote})`;
     },
   );
 }
+// export function absolutifyURLs(cssText: string | null, href: string): string {
+//   return (cssText || '').replace(
+//     URL_IN_CSS_REF,
+//     (
+//       origin: string,
+//       quote1: string,
+//       path1: string,
+//       quote2: string,
+//       path2: string,
+//       path3: string,
+//     ) => {
+//       const filePath = path1 || path2 || path3;
+//       const maybeQuote = quote1 || quote2 || '';
+//       if (!filePath) {
+//         return origin;
+//       }
+//       if (URL_PROTOCOL_MATCH.test(filePath) || URL_WWW_MATCH.test(filePath)) {
+//         return `url(${maybeQuote}${filePath}${maybeQuote})`;
+//       }
+//       if (DATA_URI.test(filePath)) {
+//         return `url(${maybeQuote}${filePath}${maybeQuote})`;
+//       }
+//       if (filePath[0] === '/') {
+//         return `url(${maybeQuote}${
+//           extractOrigin(href) + filePath
+//         }${maybeQuote})`;
+//       }
+//       const stack = href.split('/');
+//       const parts = filePath.split('/');
+//       stack.pop();
+//       for (const part of parts) {
+//         if (part === '.') {
+//           continue;
+//         } else if (part === '..') {
+//           stack.pop();
+//         } else {
+//           stack.push(part);
+//         }
+//       }
+//       return `url(${maybeQuote}${stack.join('/')}${maybeQuote})`;
+//     },
+//   );
+// }
 
 /**
  * Intention is to normalize by remove spaces, semicolons and CSS comments

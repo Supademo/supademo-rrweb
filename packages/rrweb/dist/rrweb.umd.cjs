@@ -422,51 +422,26 @@ function extractFileExtension(path, baseURL) {
   const match = url.pathname.match(regex);
   return (_a2 = match == null ? void 0 : match[1]) != null ? _a2 : null;
 }
-function extractOrigin(url) {
-  let origin = "";
-  if (url.indexOf("//") > -1) {
-    origin = url.split("/").slice(0, 3).join("/");
-  } else {
-    origin = url.split("/")[0];
-  }
-  origin = origin.split("?")[0];
-  return origin;
-}
 const URL_IN_CSS_REF = /url\((?:(')([^']*)'|(")(.*?)"|([^)]*))\)/gm;
-const URL_PROTOCOL_MATCH = /^(?:[a-z+]+:)?\/\//i;
-const URL_WWW_MATCH = /^www\..*/i;
 const DATA_URI = /^(data:)([^,]*),(.*)/i;
 function absolutifyURLs(cssText, href) {
   return (cssText || "").replace(
     URL_IN_CSS_REF,
-    (origin, quote1, path1, quote2, path2, path3) => {
+    (originMatch, quote1, path1, quote2, path2, path3) => {
       const filePath = path1 || path2 || path3;
       const maybeQuote = quote1 || quote2 || "";
       if (!filePath) {
-        return origin;
-      }
-      if (URL_PROTOCOL_MATCH.test(filePath) || URL_WWW_MATCH.test(filePath)) {
-        return `url(${maybeQuote}${filePath}${maybeQuote})`;
+        return originMatch;
       }
       if (DATA_URI.test(filePath)) {
         return `url(${maybeQuote}${filePath}${maybeQuote})`;
       }
-      if (filePath[0] === "/") {
-        return `url(${maybeQuote}${extractOrigin(href) + filePath}${maybeQuote})`;
+      try {
+        const absoluteUrl = new URL(filePath, href).href;
+        return `url(${maybeQuote}${absoluteUrl}${maybeQuote})`;
+      } catch (e2) {
+        return originMatch;
       }
-      const stack = href.split("/");
-      const parts = filePath.split("/");
-      stack.pop();
-      for (const part of parts) {
-        if (part === ".") {
-          continue;
-        } else if (part === "..") {
-          stack.pop();
-        } else {
-          stack.push(part);
-        }
-      }
-      return `url(${maybeQuote}${stack.join("/")}${maybeQuote})`;
     }
   );
 }
