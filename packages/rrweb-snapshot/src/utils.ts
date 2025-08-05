@@ -112,6 +112,23 @@ export function escapeImportStatement(rule: CSSImportRule): string {
  * any programmatic manipulation prior to the snapshot, in which case the .sheet would be more up to date
  */
 export function stringifyStylesheet(s: CSSStyleSheet): string | null {
+  // Supademo: Workaround for `all: unset` serialization issue.
+  // Browsers expand `all: unset` into all longhand properties, which can break
+  // the order of subsequent CSS rules. To prevent this, we check the raw text
+  // of an inline stylesheet. If `all: unset` is present, we use the raw
+  // text content directly. This preserves the original authored order.
+  // The trade-off is that we won't capture styles added dynamically via CSSOM
+  // for stylesheets that contain `all: unset`.
+  const ownerNode = s.ownerNode;
+  if (ownerNode && isElement(ownerNode) && ownerNode.tagName === 'STYLE' && !s.href) {
+    const textContent = (ownerNode as HTMLStyleElement).textContent;
+    const cssText = textContent || '';
+    const ALL_UNSET_REGEX = /all\s*:\s*unset/;
+    if (ALL_UNSET_REGEX.test(cssText)) {
+      return absolutifyURLs(cssText, location.href);
+    }
+  }
+
   try {
     const rules = s.rules || s.cssRules;
     if (!rules) {

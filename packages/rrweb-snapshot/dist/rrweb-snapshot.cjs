@@ -197,6 +197,15 @@ function escapeImportStatement(rule2) {
   return statement.join(" ") + ";";
 }
 function stringifyStylesheet(s) {
+  const ownerNode = s.ownerNode;
+  if (ownerNode && isElement(ownerNode) && ownerNode.tagName === "STYLE" && !s.href) {
+    const textContent2 = ownerNode.textContent;
+    const cssText = textContent2 || "";
+    const ALL_UNSET_REGEX = /all\s*:\s*unset/;
+    if (ALL_UNSET_REGEX.test(cssText)) {
+      return absolutifyURLs(cssText, location.href);
+    }
+  }
   try {
     const rules = s.rules || s.cssRules;
     if (!rules) {
@@ -4558,19 +4567,44 @@ function serializeElementNode(n, options) {
     attributes.rr_open_mode = n.matches("dialog:modal") ? "modal" : "non-modal";
   }
   if (tagName === "canvas" && recordCanvas) {
-    if (n.__context === "2d") {
-      if (!is2DCanvasBlank(n)) {
-        attributes.rr_dataURL = n.toDataURL(
+    const canvas = n;
+    const contextType = canvas.__context;
+    try {
+      if (contextType === "2d") {
+        if (!is2DCanvasBlank(canvas)) {
+          attributes.rr_dataURL = canvas.toDataURL(
+            dataURLOptions.type,
+            dataURLOptions.quality
+          );
+        }
+      } else if (contextType && (contextType.startsWith("webgl") || contextType === "bitmaprenderer")) {
+        attributes.rr_dataURL = canvas.toDataURL(
+          dataURLOptions.type,
+          dataURLOptions.quality
+        );
+      } else if (!contextType) {
+        attributes.rr_dataURL = canvas.toDataURL(
+          dataURLOptions.type,
+          dataURLOptions.quality
+        );
+      } else if (contextType) {
+        if (process.env.NODE_ENV !== "production") {
+          console.warn(
+            `[rrweb-snapshot] Encountered unhandled canvas context type: "${contextType}". Attempting to capture dataURL.`
+          );
+        }
+        attributes.rr_dataURL = canvas.toDataURL(
           dataURLOptions.type,
           dataURLOptions.quality
         );
       }
-    } else if (!("__context" in n)) {
-      const canvasDataURL = n.toDataURL(
-        dataURLOptions.type,
-        dataURLOptions.quality
-      );
-      attributes.rr_dataURL = canvasDataURL;
+    } catch (err) {
+      if (process.env.NODE_ENV !== "production") {
+        console.warn(
+          `[rrweb-snapshot] Failed to capture canvas data for context "${contextType || "unknown"}":`,
+          err
+        );
+      }
     }
   }
   if (tagName === "img" && inlineImages) {
