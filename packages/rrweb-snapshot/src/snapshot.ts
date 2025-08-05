@@ -735,21 +735,57 @@ function serializeElementNode(
 
   // canvas image data
   if (tagName === 'canvas' && recordCanvas) {
-    if ((n as ICanvas).__context === '2d') {
-      // only record this on 2d canvas
-      if (!is2DCanvasBlank(n as HTMLCanvasElement)) {
-        attributes.rr_dataURL = (n as HTMLCanvasElement).toDataURL(
+    const canvas = n as ICanvas; // Use ICanvas type for clarity
+    const contextType = canvas.__context;
+
+    try {
+      if (contextType === '2d') {
+        // only record this on 2d canvas
+        if (!is2DCanvasBlank(canvas)) { // is2DCanvasBlank takes HTMLCanvasElement
+          attributes.rr_dataURL = canvas.toDataURL(
+            dataURLOptions.type,
+            dataURLOptions.quality,
+          );
+        }
+      } else if (contextType && (contextType.startsWith('webgl') || contextType === 'bitmaprenderer')) {
+        // For WebGL, WebGL2, or BitmapRenderer contexts, attempt toDataURL directly.
+        // Note: For WebGL, if preserveDrawingBuffer is false (default), the buffer might be cleared.
+        // rrweb does not control WebGL context creation attributes.
+        attributes.rr_dataURL = canvas.toDataURL(
           dataURLOptions.type,
           dataURLOptions.quality,
         );
+      } else if (!contextType) {
+        // __context is not set (e.g., canvas not yet initialized with a context by the page).
+        // Attempt toDataURL directly as a fallback.
+        // This maintains previous behavior for canvases without a __context property.
+        attributes.rr_dataURL = canvas.toDataURL(
+          dataURLOptions.type,
+          dataURLOptions.quality,
+        );
+      } else if (contextType) {
+        // Fallback for any other known (but not explicitly handled above) contextType string.
+        if (process.env.NODE_ENV !== 'production') {
+            console.warn(
+              `[rrweb-snapshot] Encountered unhandled canvas context type: "${contextType}". Attempting to capture dataURL.`,
+            );
+        }
+        attributes.rr_dataURL = canvas.toDataURL(
+            dataURLOptions.type,
+            dataURLOptions.quality,
+        );
       }
-    } else if (!('__context' in n)) {
-      // context is unknown, better not call getContext to trigger it
-      const canvasDataURL = (n as HTMLCanvasElement).toDataURL(
-        dataURLOptions.type,
-        dataURLOptions.quality,
-      );
-      attributes.rr_dataURL = canvasDataURL;
+    } catch (err) {
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn(
+          `[rrweb-snapshot] Failed to capture canvas data for context "${
+            contextType || 'unknown'
+          }":`,
+          err,
+        );
+      }
+      // Optionally, set a placeholder to indicate failure, e.g.:
+      // attributes.rr_dataURL = 'error:capture_failed';
     }
   }
   // save image offline
