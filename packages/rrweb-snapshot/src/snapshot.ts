@@ -856,6 +856,62 @@ function serializeElementNode(
       attributes.rr_scrollTop = n.scrollTop;
     }
   }
+  // Web Animations API - capture current animated styles
+  // ? Supademo: Capture the current state of JS animations (element.animate())
+  try {
+    const animations = n.getAnimations();
+    if (animations.length > 0) {
+      // Collect all animated property names from keyframes
+      const animatedProps = new Set<string>();
+      for (const anim of animations) {
+        const effect = anim.effect as KeyframeEffect;
+        const keyframes = effect?.getKeyframes() || [];
+        for (const kf of keyframes) {
+          Object.keys(kf).forEach((prop) => {
+            // Skip non-CSS properties
+            if (
+              prop !== 'offset' &&
+              prop !== 'easing' &&
+              prop !== 'composite' &&
+              prop !== 'computedOffset'
+            ) {
+              animatedProps.add(prop);
+            }
+          });
+        }
+      }
+
+      if (animatedProps.size > 0) {
+        // Get computed values for animated properties
+        const computedStyle = getComputedStyle(n);
+        const animatedStyles: string[] = [];
+
+        for (const prop of animatedProps) {
+          // Convert camelCase to kebab-case for CSS property names
+          const kebabProp = prop.replace(
+            /[A-Z]/g,
+            (m) => `-${m.toLowerCase()}`,
+          );
+          const value = computedStyle.getPropertyValue(kebabProp);
+          if (value) {
+            animatedStyles.push(`${kebabProp}: ${value}`);
+          }
+        }
+
+        if (animatedStyles.length > 0) {
+          // Merge with existing style attribute
+          const existingStyle =
+            typeof attributes.style === 'string' ? attributes.style : '';
+          const newStyles = animatedStyles.join('; ');
+          attributes.style = existingStyle
+            ? `${existingStyle}; ${newStyles}`
+            : newStyles;
+        }
+      }
+    }
+  } catch (e) {
+    // Ignore errors - getAnimations might not be supported in all contexts
+  }
   // block element
   if (needBlock) {
     const { width, height } = n.getBoundingClientRect();
