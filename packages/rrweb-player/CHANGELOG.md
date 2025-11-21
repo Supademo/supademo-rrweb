@@ -1,5 +1,11 @@
 # rrweb-player
 
+## 3.0.1
+
+### Patch Changes
+
+- @supademo/rrweb-replay@3.0.1
+
 ## 2.0.0-alpha.18
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # rrweb-snapshot
 
+## 3.0.4
+
+### Patch Changes
+
+- 771fed2: Capture Web Animations API state during snapshot serialization. Elements animated using element.animate() now have their current computed style values merged into the style attribute, preserving the exact visual state at snapshot time without requiring animation replay logic
+
 ## 2.0.0-alpha.18
 
 ### Major Changes

@@ -1,5 +1,12 @@
 # rrdom
 
+## 3.0.1
+
+### Patch Changes
+
+- Updated dependencies [771fed2]
+  - @supademo/rrweb-snapshot@3.0.4
+
 ## 2.0.0-alpha.18
 
 ### Patch Changes

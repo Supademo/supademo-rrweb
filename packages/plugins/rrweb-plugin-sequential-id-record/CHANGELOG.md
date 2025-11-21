@@ -1,5 +1,11 @@
 # @supademo/rrweb-plugin-sequential-id-record
 
+## 3.0.1
+
+### Patch Changes
+
+- @supademo/rrweb@3.0.1
+
 ## 2.0.0-alpha.18
 
 ### Patch Changes
