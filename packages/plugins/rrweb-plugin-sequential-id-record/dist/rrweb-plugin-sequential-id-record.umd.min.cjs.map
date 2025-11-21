@@ -1,7 +1,0 @@
-{
-  "version": 3,
-  "sources": ["../src/index.ts"],
-  "sourcesContent": ["import type { RecordPlugin } from '@supademo/rrweb-types';\n\nexport type SequentialIdOptions = {\n  key: string;\n};\n\nconst defaultOptions: SequentialIdOptions = {\n  key: '_sid',\n};\n\nexport const PLUGIN_NAME = 'rrweb/sequential-id@1';\n\nexport const getRecordSequentialIdPlugin: (\n  options?: Partial<SequentialIdOptions>,\n) => RecordPlugin = (options) => {\n  const _options = options\n    ? Object.assign({}, defaultOptions, options)\n    : defaultOptions;\n  let id = 0;\n\n  return {\n    name: PLUGIN_NAME,\n    eventProcessor(event) {\n      Object.assign(event, {\n        [_options.key]: ++id,\n      });\n      return event;\n    },\n    options: _options,\n  };\n};\n"],
-  "mappings": ";gFAMA,MAAMA,EAAsC,CAC1C,IAAK,MACP,EAEaC,EAAc,wBAEdC,EAEQC,GAAY,CACzB,MAAAC,EAAWD,EACb,OAAO,OAAO,CAAA,EAAIH,EAAgBG,CAAO,EACzCH,EACJ,IAAIK,EAAK,EAEF,MAAA,CACL,KAAMJ,EACN,eAAeK,EAAO,CACpB,cAAO,OAAOA,EAAO,CACnB,CAACF,EAAS,GAAG,EAAG,EAAEC,CAAA,CACnB,EACMC,CACT,EACA,QAASF,CACX,CACF",
-  "names": ["defaultOptions", "PLUGIN_NAME", "getRecordSequentialIdPlugin", "options", "_options", "id", "event"]
-}
