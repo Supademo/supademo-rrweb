@@ -118,10 +118,52 @@ From `docs/development/coding-style.md`:
 5. **Turbo orchestration** - use `pnpm turbo run prepublish` for proper build ordering
 6. **Main branch is `main`**, fork from `master` for PRs
 
+## Authentication
+
+This repository publishes to **GitHub Packages** registry which requires authentication.
+
+**Required Environment Variable:**
+```bash
+export GITHUB_NPM_TOKEN=ghp_YourPersonalAccessToken
+```
+
+The `.npmrc` file uses `${GITHUB_NPM_TOKEN}` for authentication. You must set this environment variable before:
+- Installing private dependencies
+- Publishing packages
+
+**Creating a GitHub Personal Access Token:**
+1. Go to GitHub Settings → Developer settings → Personal access tokens → Tokens (classic)
+2. Generate new token with `write:packages` and `read:packages` scopes
+3. Add to your shell profile (`~/.zshrc` or `~/.bashrc`):
+   ```bash
+   export GITHUB_NPM_TOKEN=ghp_YourTokenHere
+   ```
+
 ## Publishing
 
-Uses GitHub Packages registry with Changesets for versioning. Release with:
+Uses GitHub Packages registry with Changesets for versioning.
+
+**Prerequisites:**
+- `GITHUB_NPM_TOKEN` environment variable must be set (see Authentication above)
+
+**Release workflow:**
 ```bash
+# 1. Create changeset
+pnpm changeset
+
+# 2. Commit changeset
+git add .changeset && git commit -m "chore: add changeset"
+
+# 3. Version packages
+pnpm changeset version
+
+# 4. Commit version changes
+git add . && git commit -m "chore: version packages"
+
+# 5. Build and publish
 pnpm release    # Build all + changeset publish
+
+# 6. Push to remote
+git push --follow-tags
 ```
 
