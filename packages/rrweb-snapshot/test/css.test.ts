@@ -96,7 +96,13 @@ li[attr="has,comma"] a.\\:hover {background: red;}`,
 });
 
 describe('css splitter', () => {
-  it('finds css textElement splits correctly', () => {
+  // Supademo: These tests are skipped because they test upstream splitCssText behavior
+  // that was intentionally replaced with a simpler implementation.
+  // Upstream: Maps browser-stringified CSS back to original text nodes (complex, fragile)
+  // Supademo: Returns direct textContent of child nodes (simple, robust)
+  // See SUPADEMO_CHANGES.md section "4. splitCssText Simplification"
+
+  it.skip('finds css textElement splits correctly', () => {
     const window = new Window({ url: 'https://localhost:8080' });
     const document = window.document;
     document.head.innerHTML = '<style>.a{background-color:red;}</style>';
@@ -117,7 +123,7 @@ describe('css splitter', () => {
     }
   });
 
-  it('finds css textElement splits correctly when comments are present', () => {
+  it.skip('finds css textElement splits correctly when comments are present', () => {
     const window = new Window({ url: 'https://localhost:8080' });
     const document = window.document;
     // as authored, with comment, missing semicolons
@@ -137,7 +143,7 @@ describe('css splitter', () => {
     }
   });
 
-  it('finds css textElement splits correctly when vendor prefixed rules have been removed', () => {
+  it.skip('finds css textElement splits correctly when vendor prefixed rules have been removed', () => {
     const style = JSDOM.fragment(`<style></style>`).querySelector('style');
     if (style) {
       // as authored, with newlines

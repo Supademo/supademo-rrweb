@@ -80,7 +80,7 @@ declare interface CSSImportRule extends CSSRule {
  * Browsers sometimes incorrectly escape `@import` on `.cssText` statements.
  * This function tries to correct the escaping.
  * more info: https://bugs.chromium.org/p/chromium/issues/detail?id=1472259
- * @param cssImportRule
+ * @param cssImportRule -
  * @returns `cssText` with browser inconsistencies fixed, or null if not applicable.
  */
 export function escapeImportStatement(rule: CSSImportRule): string {
@@ -111,24 +111,120 @@ export function escapeImportStatement(rule: CSSImportRule): string {
  * however, at snapshot time, we don't know whether the style element has suffered
  * any programmatic manipulation prior to the snapshot, in which case the .sheet would be more up to date
  */
+
+/**
+ * Supademo: Extract all rule selectors from CSS text for comparison.
+ * Used for smart merge to detect which rules exist in textContent vs CSSOM.
+ */
+function extractSelectors(cssText: string): Set<string> {
+  const selectors = new Set<string>();
+  // Remove comments first to avoid false matches
+  const withoutComments = cssText.replace(/\/\*[\s\S]*?\*\//g, '');
+  // Remove @-rules content to avoid matching nested selectors incorrectly
+  const withoutAtRules = withoutComments.replace(/@[^{]+\{[^}]*\}/g, '');
+  // Match selectors (everything before {)
+  const matches = withoutAtRules.matchAll(/([^{}@]+)\s*\{/g);
+  for (const match of matches) {
+    // Normalize: trim, collapse whitespace
+    const selector = match[1].trim().replace(/\s+/g, ' ');
+    if (selector) {
+      selectors.add(selector);
+    }
+  }
+  return selectors;
+}
+
+/**
+ * Supademo: Get rules from CSSOM that don't exist in textContent.
+ * These are dynamically added rules (insertRule, etc.)
+ */
+function getCssomOnlyRules(
+  sheet: CSSStyleSheet,
+  textContentSelectors: Set<string>,
+  sheetHref: string | null,
+): string {
+  const rules = sheet.cssRules || sheet.rules;
+  if (!rules) return '';
+
+  const cssomOnlyRules: string[] = [];
+
+  for (let i = 0; i < rules.length; i++) {
+    const rule = rules[i];
+    if (isCSSStyleRule(rule)) {
+      const selector = rule.selectorText.trim().replace(/\s+/g, ' ');
+      if (!textContentSelectors.has(selector)) {
+        // This rule was added via CSSOM, not in textContent
+        let ruleText = rule.cssText;
+        if (sheetHref) {
+          ruleText = absolutifyURLs(ruleText, sheetHref);
+        }
+        cssomOnlyRules.push(ruleText);
+      }
+    } else if (isCSSImportRule(rule)) {
+      // @import rules - include them via stringifyRule
+      cssomOnlyRules.push(stringifyRule(rule, sheetHref));
+    }
+    // Note: Other @-rules (media, keyframes, etc.) from CSSOM are more complex
+    // to diff. For now, we trust textContent has them if it exists.
+  }
+
+  return cssomOnlyRules.join('');
+}
+
 export function stringifyStylesheet(s: CSSStyleSheet): string | null {
-  // Supademo: Workaround for `all: unset` serialization issue.
-  // Browsers expand `all: unset` into all longhand properties, which can break
-  // the order of subsequent CSS rules. To prevent this, we check the raw text
-  // of an inline stylesheet. If `all: unset` is present, we use the raw
-  // text content directly. This preserves the original authored order.
-  // The trade-off is that we won't capture styles added dynamically via CSSOM
-  // for stylesheets that contain `all: unset`.
   const ownerNode = s.ownerNode;
+
+  // For inline <style> elements, use smart merge strategy
   if (ownerNode && isElement(ownerNode) && ownerNode.tagName === 'STYLE' && !s.href) {
-    const textContent = (ownerNode as HTMLStyleElement).textContent;
-    const cssText = textContent || '';
+    const styleElement = ownerNode as HTMLStyleElement;
+    const textContent = styleElement.textContent || '';
+    const baseHref = ownerNode.ownerDocument?.location.href || location.href;
+
+    // Supademo: Workaround for `all: unset` serialization issue.
+    // Browsers expand `all: unset` into all longhand properties, which can break
+    // the order of subsequent CSS rules. Use raw text content directly.
     const ALL_UNSET_REGEX = /all\s*:\s*unset/;
-    if (ALL_UNSET_REGEX.test(cssText)) {
-      return absolutifyURLs(cssText, location.href);
+    if (ALL_UNSET_REGEX.test(textContent)) {
+      return absolutifyURLs(textContent, baseHref);
+    }
+
+    let rules: CSSRuleList | null = null;
+    try {
+      rules = s.cssRules || s.rules;
+    } catch {
+      // Cross-origin or security restriction - fall back to textContent
+      if (textContent.trim()) {
+        return absolutifyURLs(textContent, baseHref);
+      }
+      return null;
+    }
+
+    // Case 1: Empty textContent with rules = CSS-in-JS → use CSSOM only
+    if (!textContent.trim() && rules?.length) {
+      // Fall through to existing CSSOM logic below
+    }
+    // Case 2: Has textContent → smart merge (preserves CSS variables & shorthands)
+    else if (textContent.trim()) {
+      let result = absolutifyURLs(textContent, baseHref);
+
+      // Check for CSSOM-only rules (dynamic additions via insertRule)
+      if (rules?.length) {
+        const textSelectors = extractSelectors(textContent);
+        const cssomOnlyRules = getCssomOnlyRules(s, textSelectors, baseHref);
+        if (cssomOnlyRules) {
+          result += '\n/* rrweb-cssom-rules */\n' + cssomOnlyRules;
+        }
+      }
+
+      return result;
+    }
+    // Case 3: Empty textContent, no rules → return null
+    else if (!rules?.length) {
+      return null;
     }
   }
 
+  // External stylesheets (<link>) or CSS-in-JS fallback: use CSSOM
   try {
     const rules = s.rules || s.cssRules;
     if (!rules) {
@@ -136,7 +232,7 @@ export function stringifyStylesheet(s: CSSStyleSheet): string | null {
     }
     let sheetHref = s.href;
     if (!sheetHref && s.ownerNode && s.ownerNode.ownerDocument) {
-      // an inline <style> element
+      // an inline <style> element (CSS-in-JS case)
       sheetHref = s.ownerNode.ownerDocument.location.href;
     }
     const stringifiedRules = Array.from(rules, (rule: CSSRule) =>

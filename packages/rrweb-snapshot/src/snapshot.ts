@@ -670,14 +670,18 @@ function serializeElementNode(
       (n as HTMLStyleElement).sheet as CSSStyleSheet,
     );
     if (cssText) {
-      if (n.childNodes.length > 1) {
+      // Supademo: Smart merge - markCssSplits is only needed for CSSOM-only output
+      // When using textContent (which preserves CSS vars/shorthands), the text is already
+      // properly structured. The '/* rrweb-cssom-rules */' marker indicates smart merge was used.
+      const usedTextContent = !cssText.includes('/* rrweb-cssom-rules */') &&
+        (n as HTMLStyleElement).textContent?.trim();
+
+      if (n.childNodes.length > 1 && !usedTextContent) {
+        // Only apply markCssSplits for CSSOM-only output (e.g., CSS-in-JS)
         // ? Supademo: Prevent markCssSplits from throwing error on weird style tags
-        // Old -> cssText = markCssSplits(cssText, n as HTMLStyleElement);
         cssText = (() => {
           try {
-            // console.log('BEFORE', n, getFormattedTime())
             const result = markCssSplits(cssText, n as HTMLStyleElement) || '';
-            // console.log('AFTER', n, getFormattedTime())
             return result;
           } catch (error) {
             if (process.env.NODE_ENV !== 'production') {
