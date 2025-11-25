@@ -1,6 +1,6 @@
 {
   "name": "@supademo/rrvideo",
-  "version": "3.0.1",
+  "version": "3.0.2",
   "description": "transform rrweb session into video",
   "main": "dist/index.js",
   "bin": {

@@ -1,6 +1,6 @@
 {
   "name": "@supademo/rrweb-plugin-sequential-id-record",
-  "version": "3.0.1",
+  "version": "3.0.2",
   "description": "",
   "type": "module",
   "main": "./dist/rrweb-plugin-sequential-id-record.umd.cjs",

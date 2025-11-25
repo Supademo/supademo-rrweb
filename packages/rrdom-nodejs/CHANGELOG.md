@@ -1,5 +1,11 @@
 # rrdom-nodejs
 
+## 3.0.2
+
+### Patch Changes
+
+- @supademo/rrdom@3.0.2
+
 ## 3.0.1
 
 ### Patch Changes
