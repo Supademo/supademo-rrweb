@@ -158,9 +158,53 @@ Improved WebGL canvas capture with better context handling and preservation opti
 
 ---
 
+### 10. Canvas Fallback Capture Support
+
+**Commit:** Current
+**File:** `src/snapshot.ts`
+
+#### Problem
+
+Some canvases cannot be captured via `toDataURL()`:
+- **WebGL with `preserveDrawingBuffer: false`**: The WebGL buffer is cleared after each frame, so `toDataURL()` returns a black/transparent image
+- **Tainted canvases**: Cross-origin content causes a `SecurityError` when calling `toDataURL()`
+
+#### Solution
+
+Added two new attributes to canvas serialization to enable fallback capture via viewport screenshot cropping:
+
+1. **`rr_canvasBounds`** (always present for canvas elements):
+   ```typescript
+   {
+     x: number,      // viewport-relative X position
+     y: number,      // viewport-relative Y position
+     width: number,  // element width
+     height: number, // element height
+     inViewport: boolean  // whether canvas is visible in viewport
+   }
+   ```
+
+2. **`rr_skipReason`** (only when capture fails):
+   - `'webgl-no-preserve-buffer'` - WebGL context with `preserveDrawingBuffer: false`
+   - `'tainted'` - Cross-origin content (SecurityError)
+
+#### Implementation
+
+Before attempting `toDataURL()`, the code now:
+1. Always captures bounds via `getBoundingClientRect()`
+2. Pre-checks WebGL contexts for `preserveDrawingBuffer: false` to avoid wasted `toDataURL()` calls
+3. Sets `rr_skipReason` instead of `rr_dataURL` when capture is known to fail
+4. Catches `SecurityError` for tainted canvases and sets appropriate skip reason
+
+#### Consumer Usage
+
+The consuming application (e.g., Supademo Extension) can detect `rr_skipReason` and use `rr_canvasBounds` to crop the canvas region from a viewport screenshot as a fallback.
+
+---
+
 ## Animation Patches
 
-### 10. Web Animations API Capture
+### 11. Web Animations API Capture
 
 **Commit:** `e5e2815`
 **File:** `src/snapshot.ts`
@@ -173,7 +217,7 @@ Captures Web Animations API state in snapshots, allowing CSS animations and tran
 
 ## Shadow DOM Patches
 
-### 11. adoptedStyleSheets Support
+### 12. adoptedStyleSheets Support
 
 **Commits:** `bb85236`, `151082d`
 **File:** `src/snapshot.ts`
@@ -186,7 +230,7 @@ Added support for `adoptedStyleSheets` in Shadow DOM, which is used by modern we
 
 ## Configuration Options
 
-### 12. `ignoreSelector` Support
+### 13. `ignoreSelector` Support
 
 **Commit:** `c03763b`
 **Files:** `src/snapshot.ts`, `src/types.ts`
@@ -197,7 +241,7 @@ Added `ignoreSelector` option to exclude specific elements from recording based 
 
 ---
 
-### 13. `customGenId` / `genId` Support
+### 14. `customGenId` / `genId` Support
 
 **Commits:** `86b26cf`, `2c0cd9b`
 **Files:** `src/snapshot.ts`, `src/types.ts`

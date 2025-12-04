@@ -742,54 +742,69 @@ function serializeElementNode(
     const canvas = n as ICanvas; // Use ICanvas type for clarity
     const contextType = canvas.__context;
 
-    try {
-      if (contextType === '2d') {
-        // only record this on 2d canvas
-        if (!is2DCanvasBlank(canvas)) { // is2DCanvasBlank takes HTMLCanvasElement
+    // Always capture bounds for fallback cropping (viewport-relative coordinates)
+    const rect = n.getBoundingClientRect();
+    attributes.rr_canvasBounds = JSON.stringify({
+      x: rect.x,
+      y: rect.y,
+      width: rect.width,
+      height: rect.height,
+      inViewport: rect.bottom > 0 && rect.top < window.innerHeight
+                && rect.right > 0 && rect.left < window.innerWidth
+    });
+
+    // Check for WebGL with preserveDrawingBuffer: false BEFORE attempting capture
+    // This avoids wasting time on toDataURL() that will return black anyway
+    if (contextType && (contextType === 'webgl' || contextType === 'webgl2')) {
+      try {
+        const gl = canvas.getContext(contextType) as WebGLRenderingContext | WebGL2RenderingContext | null;
+        if (gl && gl.getContextAttributes()?.preserveDrawingBuffer === false) {
+          attributes.rr_skipReason = 'webgl-no-preserve-buffer';
+          // Don't attempt toDataURL - buffer is already cleared
+          // The background script will crop from the viewport screenshot instead
+        }
+      } catch {
+        // Context access failed, try toDataURL anyway
+      }
+    }
+
+    // Only attempt capture if we haven't already set a skip reason
+    if (!attributes.rr_skipReason) {
+      try {
+        if (contextType === '2d') {
+          // only record this on 2d canvas
+          if (!is2DCanvasBlank(canvas)) { // is2DCanvasBlank takes HTMLCanvasElement
+            attributes.rr_dataURL = canvas.toDataURL(
+              dataURLOptions.type,
+              dataURLOptions.quality,
+            );
+          }
+        } else if (contextType && (contextType.startsWith('webgl') || contextType === 'bitmaprenderer')) {
+          // For WebGL with preserveBuffer:true, WebGL2, or BitmapRenderer contexts
           attributes.rr_dataURL = canvas.toDataURL(
             dataURLOptions.type,
             dataURLOptions.quality,
           );
-        }
-      } else if (contextType && (contextType.startsWith('webgl') || contextType === 'bitmaprenderer')) {
-        // For WebGL, WebGL2, or BitmapRenderer contexts, attempt toDataURL directly.
-        // Note: For WebGL, if preserveDrawingBuffer is false (default), the buffer might be cleared.
-        // rrweb does not control WebGL context creation attributes.
-        attributes.rr_dataURL = canvas.toDataURL(
-          dataURLOptions.type,
-          dataURLOptions.quality,
-        );
-      } else if (!contextType) {
-        // __context is not set (e.g., canvas not yet initialized with a context by the page).
-        // Attempt toDataURL directly as a fallback.
-        // This maintains previous behavior for canvases without a __context property.
-        attributes.rr_dataURL = canvas.toDataURL(
-          dataURLOptions.type,
-          dataURLOptions.quality,
-        );
-      } else if (contextType) {
-        // Fallback for any other known (but not explicitly handled above) contextType string.
-        if (process.env.NODE_ENV !== 'production') {
-            console.warn(
-              `[rrweb-snapshot] Encountered unhandled canvas context type: "${contextType}". Attempting to capture dataURL.`,
-            );
-        }
-        attributes.rr_dataURL = canvas.toDataURL(
+        } else if (!contextType) {
+          // __context is not set (e.g., canvas not yet initialized with a context by the page).
+          // Attempt toDataURL directly as a fallback.
+          attributes.rr_dataURL = canvas.toDataURL(
             dataURLOptions.type,
             dataURLOptions.quality,
-        );
+          );
+        } else if (contextType) {
+          // Fallback for any other known (but not explicitly handled above) contextType string.
+          attributes.rr_dataURL = canvas.toDataURL(
+              dataURLOptions.type,
+              dataURLOptions.quality,
+          );
+        }
+      } catch (err) {
+        // SecurityError = tainted canvas (cross-origin content)
+        if (err instanceof DOMException && err.name === 'SecurityError') {
+          attributes.rr_skipReason = 'tainted';
+        }
       }
-    } catch (err) {
-      if (process.env.NODE_ENV !== 'production') {
-        console.warn(
-          `[rrweb-snapshot] Failed to capture canvas data for context "${
-            contextType || 'unknown'
-          }":`,
-          err,
-        );
-      }
-      // Optionally, set a placeholder to indicate failure, e.g.:
-      // attributes.rr_dataURL = 'error:capture_failed';
     }
   }
   // save image offline
