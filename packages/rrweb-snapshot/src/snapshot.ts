@@ -763,15 +763,15 @@ function serializeElementNode(
 
     // Always capture bounds for fallback cropping (viewport-relative coordinates)
     const rect = n.getBoundingClientRect();
-    attributes.rr_canvasBounds = JSON.stringify({
-      x: rect.x,
-      y: rect.y,
-      width: rect.width,
-      height: rect.height,
-      inViewport: rect.bottom > 0 && rect.top < window.innerHeight
-                && rect.right > 0 && rect.left < window.innerWidth,
-      devicePixelRatio: window.devicePixelRatio,
-    });
+    attributes.rr_x = rect.x;
+    attributes.rr_y = rect.y;
+    attributes.rr_width = rect.width;
+    attributes.rr_height = rect.height;
+    attributes.rr_dpr = window.devicePixelRatio;
+    if (rect.bottom > 0 && rect.top < window.innerHeight
+        && rect.right > 0 && rect.left < window.innerWidth) {
+      attributes.rr_inViewport = true;
+    }
 
     // Skip zero-dimension canvases (hidden or collapsed)
     if (rect.width === 0 || rect.height === 0) {
@@ -991,12 +991,10 @@ function serializeElementNode(
   // the iframe's position in the parent frame to translate coordinates
   if (tagName === 'iframe') {
     const rect = n.getBoundingClientRect();
-    attributes.rr_iframeBounds = JSON.stringify({
-      x: rect.x,
-      y: rect.y,
-      width: rect.width,
-      height: rect.height,
-    });
+    attributes.rr_iframe_x = rect.x;
+    attributes.rr_iframe_y = rect.y;
+    attributes.rr_iframe_width = rect.width;
+    attributes.rr_iframe_height = rect.height;
   }
 
   let isCustomElement: true | undefined;

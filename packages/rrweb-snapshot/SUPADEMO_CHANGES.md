@@ -173,19 +173,17 @@ Some canvases cannot be captured via `toDataURL()`:
 
 #### Solution
 
-Added attributes to canvas and iframe serialization to enable fallback capture via viewport screenshot cropping:
+Added flat attributes to canvas and iframe serialization to enable fallback capture via viewport screenshot cropping:
 
-1. **`rr_canvasBounds`** (always present for canvas elements):
-   ```typescript
-   {
-     x: number,              // viewport-relative X position
-     y: number,              // viewport-relative Y position
-     width: number,          // element width
-     height: number,         // element height
-     inViewport: boolean,    // whether canvas is visible in viewport
-     devicePixelRatio: number // window.devicePixelRatio at capture time
-   }
-   ```
+1. **Canvas bounds** (always present for canvas elements):
+   | Attribute | Type | Description |
+   |-----------|------|-------------|
+   | `rr_x` | `number` | Viewport-relative X position |
+   | `rr_y` | `number` | Viewport-relative Y position |
+   | `rr_width` | `number` | Element width |
+   | `rr_height` | `number` | Element height |
+   | `rr_dpr` | `number` | `window.devicePixelRatio` at capture time |
+   | `rr_inViewport` | `true` | Only present if canvas is visible in viewport |
 
 2. **`rr_skipReason`** (only when capture fails):
    | Reason | Description |
@@ -197,34 +195,35 @@ Added attributes to canvas and iframe serialization to enable fallback capture v
    | `'invalid-state'` | Canvas in invalid state (context lost, etc.) |
    | `'capture-error'` | Generic capture failure |
 
-3. **`rr_iframeBounds`** (on iframe elements):
-   ```typescript
-   {
-     x: number,      // iframe's viewport-relative X position
-     y: number,      // iframe's viewport-relative Y position
-     width: number,  // iframe width
-     height: number  // iframe height
-   }
-   ```
+3. **Iframe bounds** (on iframe elements):
+   | Attribute | Type | Description |
+   |-----------|------|-------------|
+   | `rr_iframe_x` | `number` | Iframe's viewport-relative X position |
+   | `rr_iframe_y` | `number` | Iframe's viewport-relative Y position |
+   | `rr_iframe_width` | `number` | Iframe width |
+   | `rr_iframe_height` | `number` | Iframe height |
+
    Used to translate canvas coordinates for canvases inside iframes.
 
 #### Implementation
 
 Before attempting `toDataURL()`, the code now:
-1. Always captures bounds via `getBoundingClientRect()`
-2. Stores `devicePixelRatio` for accurate screenshot cropping
-3. Skips zero-dimension canvases early
-4. Pre-checks WebGPU and WebGL contexts to avoid wasted `toDataURL()` calls
-5. Sets `rr_skipReason` instead of `rr_dataURL` when capture is known to fail
-6. Catches all error types (`SecurityError`, `InvalidStateError`, etc.) with appropriate skip reasons
+1. Always captures bounds via `getBoundingClientRect()` as flat attributes
+2. Stores `devicePixelRatio` (`rr_dpr`) for accurate screenshot cropping
+3. Detects context type by trying `getContext()` when `__context` is not set (for standalone usage without rrweb record module)
+4. Skips zero-dimension canvases early
+5. Pre-checks WebGPU and WebGL contexts to avoid wasted `toDataURL()` calls
+6. Sets `rr_skipReason` instead of `rr_dataURL` when capture is known to fail
+7. Catches all error types (`SecurityError`, `InvalidStateError`, etc.) with appropriate skip reasons
 
 #### Consumer Usage
 
 The consuming application (e.g., Supademo Extension) can:
 1. Detect `rr_skipReason` to identify uncapturable canvases
-2. Use `rr_canvasBounds` to crop the canvas region from a viewport screenshot
-3. For canvases in iframes, use `rr_iframeBounds` to translate coordinates to main frame space
-4. Use `devicePixelRatio` from bounds for accurate pixel scaling
+2. Use `rr_x`, `rr_y`, `rr_width`, `rr_height` to crop the canvas region from a viewport screenshot
+3. For canvases in iframes, use `rr_iframe_*` attributes to translate coordinates to main frame space
+4. Use `rr_dpr` for accurate pixel scaling
+5. Check `rr_inViewport` to determine if the canvas is currently visible
 
 ---
 
