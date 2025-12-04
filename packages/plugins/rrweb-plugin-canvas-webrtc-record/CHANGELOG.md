@@ -1,5 +1,13 @@
 # @supademo/rrweb-plugin-canvas-webrtc-record
 
+## 3.0.3
+
+### Patch Changes
+
+- 556d6aa: captures viewport-relative bounds for every canvas
+- Updated dependencies [556d6aa]
+  - @supademo/rrweb@3.0.3
+
 ## 3.0.2
 
 ### Patch Changes

@@ -1,6 +1,6 @@
 {
   "name": "@supademo/rrweb",
-  "version": "3.0.2",
+  "version": "3.0.3",
   "description": "record and replay the web",
   "scripts": {
     "prepare": "npm run prepack",

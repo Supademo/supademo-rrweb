@@ -1,5 +1,11 @@
 # @supademo/rrweb-utils
 
+## 3.0.1
+
+### Patch Changes
+
+- 556d6aa: captures viewport-relative bounds for every canvas
+
 ## 2.0.0-alpha.18
 
 ## 2.0.0-alpha.17

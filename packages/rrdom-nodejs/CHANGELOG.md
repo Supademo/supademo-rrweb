@@ -1,5 +1,14 @@
 # rrdom-nodejs
 
+## 3.0.3
+
+### Patch Changes
+
+- 556d6aa: captures viewport-relative bounds for every canvas
+- Updated dependencies [556d6aa]
+  - @supademo/rrdom@3.0.3
+  - @supademo/rrweb-types@3.0.2
+
 ## 3.0.2
 
 ### Patch Changes

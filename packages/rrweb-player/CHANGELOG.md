@@ -1,5 +1,14 @@
 # rrweb-player
 
+## 3.0.3
+
+### Patch Changes
+
+- 556d6aa: captures viewport-relative bounds for every canvas
+- Updated dependencies [556d6aa]
+  - @supademo/rrweb-packer@3.0.1
+  - @supademo/rrweb-replay@3.0.3
+
 ## 3.0.2
 
 ### Patch Changes

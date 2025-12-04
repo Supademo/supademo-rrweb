@@ -1,6 +1,6 @@
 {
   "name": "@supademo/rrweb-snapshot",
-  "version": "3.0.5",
+  "version": "3.0.6",
   "description": "rrweb's component to take a snapshot of DOM, aka DOM serializer",
   "scripts": {
     "prepare": "npm run prepack",

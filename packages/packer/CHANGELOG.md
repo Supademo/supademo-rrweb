@@ -1,5 +1,13 @@
 # @supademo/rrweb-packer
 
+## 3.0.1
+
+### Patch Changes
+
+- 556d6aa: captures viewport-relative bounds for every canvas
+- Updated dependencies [556d6aa]
+  - @supademo/rrweb-types@3.0.2
+
 ## 2.0.0-alpha.18
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # rrweb-snapshot
 
+## 3.0.6
+
+### Patch Changes
+
+- 556d6aa: captures viewport-relative bounds for every canvas
+
 ## 3.0.5
 
 ### Patch Changes
