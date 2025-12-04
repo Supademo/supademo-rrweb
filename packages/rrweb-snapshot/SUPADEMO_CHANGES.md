@@ -168,37 +168,63 @@ Improved WebGL canvas capture with better context handling and preservation opti
 Some canvases cannot be captured via `toDataURL()`:
 - **WebGL with `preserveDrawingBuffer: false`**: The WebGL buffer is cleared after each frame, so `toDataURL()` returns a black/transparent image
 - **Tainted canvases**: Cross-origin content causes a `SecurityError` when calling `toDataURL()`
+- **WebGPU canvases**: WebGPU doesn't support `toDataURL()`
+- **Zero-dimension canvases**: Hidden or collapsed canvases throw `InvalidStateError`
 
 #### Solution
 
-Added two new attributes to canvas serialization to enable fallback capture via viewport screenshot cropping:
+Added attributes to canvas and iframe serialization to enable fallback capture via viewport screenshot cropping:
 
 1. **`rr_canvasBounds`** (always present for canvas elements):
    ```typescript
    {
-     x: number,      // viewport-relative X position
-     y: number,      // viewport-relative Y position
-     width: number,  // element width
-     height: number, // element height
-     inViewport: boolean  // whether canvas is visible in viewport
+     x: number,              // viewport-relative X position
+     y: number,              // viewport-relative Y position
+     width: number,          // element width
+     height: number,         // element height
+     inViewport: boolean,    // whether canvas is visible in viewport
+     devicePixelRatio: number // window.devicePixelRatio at capture time
    }
    ```
 
 2. **`rr_skipReason`** (only when capture fails):
-   - `'webgl-no-preserve-buffer'` - WebGL context with `preserveDrawingBuffer: false`
-   - `'tainted'` - Cross-origin content (SecurityError)
+   | Reason | Description |
+   |--------|-------------|
+   | `'webgl-no-preserve-buffer'` | WebGL context with `preserveDrawingBuffer: false` |
+   | `'tainted'` | Cross-origin content (SecurityError) |
+   | `'webgpu'` | WebGPU context (no toDataURL support) |
+   | `'zero-dimension'` | Canvas has 0 width or height |
+   | `'invalid-state'` | Canvas in invalid state (context lost, etc.) |
+   | `'capture-error'` | Generic capture failure |
+
+3. **`rr_iframeBounds`** (on iframe elements):
+   ```typescript
+   {
+     x: number,      // iframe's viewport-relative X position
+     y: number,      // iframe's viewport-relative Y position
+     width: number,  // iframe width
+     height: number  // iframe height
+   }
+   ```
+   Used to translate canvas coordinates for canvases inside iframes.
 
 #### Implementation
 
 Before attempting `toDataURL()`, the code now:
 1. Always captures bounds via `getBoundingClientRect()`
-2. Pre-checks WebGL contexts for `preserveDrawingBuffer: false` to avoid wasted `toDataURL()` calls
-3. Sets `rr_skipReason` instead of `rr_dataURL` when capture is known to fail
-4. Catches `SecurityError` for tainted canvases and sets appropriate skip reason
+2. Stores `devicePixelRatio` for accurate screenshot cropping
+3. Skips zero-dimension canvases early
+4. Pre-checks WebGPU and WebGL contexts to avoid wasted `toDataURL()` calls
+5. Sets `rr_skipReason` instead of `rr_dataURL` when capture is known to fail
+6. Catches all error types (`SecurityError`, `InvalidStateError`, etc.) with appropriate skip reasons
 
 #### Consumer Usage
 
-The consuming application (e.g., Supademo Extension) can detect `rr_skipReason` and use `rr_canvasBounds` to crop the canvas region from a viewport screenshot as a fallback.
+The consuming application (e.g., Supademo Extension) can:
+1. Detect `rr_skipReason` to identify uncapturable canvases
+2. Use `rr_canvasBounds` to crop the canvas region from a viewport screenshot
+3. For canvases in iframes, use `rr_iframeBounds` to translate coordinates to main frame space
+4. Use `devicePixelRatio` from bounds for accurate pixel scaling
 
 ---
 

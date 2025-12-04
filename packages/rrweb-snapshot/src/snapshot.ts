@@ -750,18 +750,27 @@ function serializeElementNode(
       width: rect.width,
       height: rect.height,
       inViewport: rect.bottom > 0 && rect.top < window.innerHeight
-                && rect.right > 0 && rect.left < window.innerWidth
+                && rect.right > 0 && rect.left < window.innerWidth,
+      devicePixelRatio: window.devicePixelRatio,
     });
+
+    // Skip zero-dimension canvases (hidden or collapsed)
+    if (rect.width === 0 || rect.height === 0) {
+      attributes.rr_skipReason = 'zero-dimension';
+    }
+
+    // Check for WebGPU context (doesn't support toDataURL)
+    if (!attributes.rr_skipReason && contextType === 'webgpu') {
+      attributes.rr_skipReason = 'webgpu';
+    }
 
     // Check for WebGL with preserveDrawingBuffer: false BEFORE attempting capture
     // This avoids wasting time on toDataURL() that will return black anyway
-    if (contextType && (contextType === 'webgl' || contextType === 'webgl2')) {
+    if (!attributes.rr_skipReason && contextType && (contextType === 'webgl' || contextType === 'webgl2')) {
       try {
         const gl = canvas.getContext(contextType) as WebGLRenderingContext | WebGL2RenderingContext | null;
         if (gl && gl.getContextAttributes()?.preserveDrawingBuffer === false) {
           attributes.rr_skipReason = 'webgl-no-preserve-buffer';
-          // Don't attempt toDataURL - buffer is already cleared
-          // The background script will crop from the viewport screenshot instead
         }
       } catch {
         // Context access failed, try toDataURL anyway
@@ -800,9 +809,17 @@ function serializeElementNode(
           );
         }
       } catch (err) {
-        // SecurityError = tainted canvas (cross-origin content)
-        if (err instanceof DOMException && err.name === 'SecurityError') {
-          attributes.rr_skipReason = 'tainted';
+        // Set appropriate skip reason based on error type
+        if (err instanceof DOMException) {
+          if (err.name === 'SecurityError') {
+            attributes.rr_skipReason = 'tainted';
+          } else if (err.name === 'InvalidStateError') {
+            attributes.rr_skipReason = 'invalid-state';
+          } else {
+            attributes.rr_skipReason = 'capture-error';
+          }
+        } else {
+          attributes.rr_skipReason = 'capture-error';
         }
       }
     }
@@ -948,6 +965,19 @@ function serializeElementNode(
       attributes.rr_src = attributes.src;
     }
     delete attributes.src; // prevent auto loading
+  }
+
+  // Always capture iframe bounds for canvas fallback cropping
+  // Canvas elements inside iframes have iframe-relative bounds, so we need
+  // the iframe's position in the parent frame to translate coordinates
+  if (tagName === 'iframe') {
+    const rect = n.getBoundingClientRect();
+    attributes.rr_iframeBounds = JSON.stringify({
+      x: rect.x,
+      y: rect.y,
+      width: rect.width,
+      height: rect.height,
+    });
   }
 
   let isCustomElement: true | undefined;
