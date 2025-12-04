@@ -1,5 +1,11 @@
 # @supademo/rrweb-all
 
+## 3.0.4
+
+### Patch Changes
+
+- @supademo/rrweb@3.0.4
+
 ## 3.0.3
 
 ### Patch Changes

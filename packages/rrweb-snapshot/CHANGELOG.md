@@ -1,5 +1,11 @@
 # rrweb-snapshot
 
+## 3.0.7
+
+### Patch Changes
+
+- cb48756: Enhanced canvas fallback capture with devicePixelRatio, iframe bounds, and additional skip reasons (zero-dimension, webgpu, invalid-state, capture-error)
+
 ## 3.0.6
 
 ### Patch Changes

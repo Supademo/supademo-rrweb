@@ -1,5 +1,11 @@
 # rrvideo
 
+## 3.0.4
+
+### Patch Changes
+
+- @supademo/rrweb-player@3.0.4
+
 ## 3.0.3
 
 ### Patch Changes

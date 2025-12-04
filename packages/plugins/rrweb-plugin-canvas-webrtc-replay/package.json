@@ -1,6 +1,6 @@
 {
   "name": "@supademo/rrweb-plugin-canvas-webrtc-replay",
-  "version": "3.0.3",
+  "version": "3.0.4",
   "description": "",
   "type": "module",
   "main": "./dist/rrweb-plugin-canvas-webrtc-replay.umd.cjs",

@@ -1,6 +1,6 @@
 {
   "name": "@supademo/rrdom",
-  "version": "3.0.3",
+  "version": "3.0.4",
   "homepage": "https://github.com/rrweb-io/rrweb/tree/main/packages/rrdom#readme",
   "license": "MIT",
   "type": "module",
