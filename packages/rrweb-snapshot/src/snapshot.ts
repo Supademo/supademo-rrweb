@@ -740,7 +740,26 @@ function serializeElementNode(
   // canvas image data
   if (tagName === 'canvas' && recordCanvas) {
     const canvas = n as ICanvas; // Use ICanvas type for clarity
-    const contextType = canvas.__context;
+    let contextType: string | undefined = canvas.__context;
+
+    // Detect context type if __context is not set (rrweb canvas module not active)
+    // Browser behavior: getContext() returns existing context if type matches, null otherwise
+    if (!contextType) {
+      try {
+        // Check WebGL contexts first (most likely to need fallback)
+        if (canvas.getContext('webgl') || canvas.getContext('experimental-webgl')) {
+          contextType = 'webgl';
+        } else if (canvas.getContext('webgl2')) {
+          contextType = 'webgl2';
+        } else if (canvas.getContext('2d')) {
+          contextType = '2d';
+        } else if (canvas.getContext('bitmaprenderer')) {
+          contextType = 'bitmaprenderer';
+        }
+      } catch {
+        // Context detection failed, proceed without context type
+      }
+    }
 
     // Always capture bounds for fallback cropping (viewport-relative coordinates)
     const rect = n.getBoundingClientRect();
