@@ -112,6 +112,14 @@ export function escapeImportStatement(rule: CSSImportRule): string {
  * any programmatic manipulation prior to the snapshot, in which case the .sheet would be more up to date
  */
 
+// Browsers reformat selectorText (`a,b>c` becomes `a, b > c`), so both sides drop the spacing around these separators.
+function normalizeSelector(selector: string): string {
+  return selector
+    .trim()
+    .replace(/\s+/g, ' ')
+    .replace(/\s*([,>+~])\s*/g, '$1');
+}
+
 /**
  * Supademo: Extract all rule selectors from CSS text for comparison.
  * Used for smart merge to detect which rules exist in textContent vs CSSOM.
@@ -125,8 +133,7 @@ function extractSelectors(cssText: string): Set<string> {
   // Match selectors (everything before {)
   const matches = withoutAtRules.matchAll(/([^{}@]+)\s*\{/g);
   for (const match of matches) {
-    // Normalize: trim, collapse whitespace
-    const selector = match[1].trim().replace(/\s+/g, ' ');
+    const selector = normalizeSelector(match[1]);
     if (selector) {
       selectors.add(selector);
     }
@@ -151,7 +158,7 @@ function getCssomOnlyRules(
   for (let i = 0; i < rules.length; i++) {
     const rule = rules[i];
     if (isCSSStyleRule(rule)) {
-      const selector = rule.selectorText.trim().replace(/\s+/g, ' ');
+      const selector = normalizeSelector(rule.selectorText);
       if (!textContentSelectors.has(selector)) {
         // This rule was added via CSSOM, not in textContent
         let ruleText = rule.cssText;
