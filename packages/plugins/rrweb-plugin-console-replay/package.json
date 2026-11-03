@@ -1,6 +1,6 @@
 {
   "name": "@supademo/rrweb-plugin-console-replay",
-  "version": "3.0.4",
+  "version": "3.0.5",
   "description": "",
   "type": "module",
   "main": "./dist/rrweb-plugin-console-replay.umd.cjs",
